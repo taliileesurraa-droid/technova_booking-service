@@ -39,6 +39,8 @@ async function recalcForBooking(bookingId) {
   return {
     bookingId: String(booking._id),
     vehicleType: booking.vehicleType,
+    pickup: booking.pickup,
+    dropoff: booking.dropoff,
     distanceKm,
     fareEstimated,
     fareBreakdown
