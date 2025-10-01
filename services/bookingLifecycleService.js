@@ -69,16 +69,28 @@ async function completeTrip(bookingId, endLocation, options = {}) {
   const startedAt = booking.startedAt || (trip && trip.startedAt) || new Date();
   const completedAt = new Date();
 
-  if (endLocation) booking.endLocation = endLocation;
+  // Determine the actual completion location to use for metrics and dropoff
+  let completionLocation = null;
+  if (endLocation && endLocation.latitude != null && endLocation.longitude != null) {
+    completionLocation = { latitude: Number(endLocation.latitude), longitude: Number(endLocation.longitude), address: endLocation.address };
+  } else if (trip && Array.isArray(trip.locations) && trip.locations.length > 0) {
+    const last = trip.locations[trip.locations.length - 1];
+    if (last && last.lat != null && last.lng != null) {
+      completionLocation = { latitude: Number(last.lat), longitude: Number(last.lng) };
+    }
+  }
+  if (completionLocation) {
+    booking.endLocation = completionLocation;
+  }
 
   // Compute distance
   let distanceKm = 0;
   if (trip && Array.isArray(trip.locations) && trip.locations.length >= 2) {
     distanceKm = computePathDistanceKm(trip.locations);
-  } else if (booking.startLocation && endLocation) {
+  } else if (booking.startLocation && completionLocation) {
     distanceKm = haversineKm(
       { latitude: booking.startLocation.latitude, longitude: booking.startLocation.longitude },
-      { latitude: endLocation.latitude, longitude: endLocation.longitude }
+      { latitude: completionLocation.latitude, longitude: completionLocation.longitude }
     );
   } else if (booking.pickup && booking.dropoff) {
     distanceKm = haversineKm(
@@ -109,6 +121,15 @@ async function completeTrip(bookingId, endLocation, options = {}) {
   booking.waitingTime = waitingTimeMinutes;
   booking.commissionAmount = commission;
   booking.driverEarnings = driverEarnings;
+  // Overwrite booking.dropoff with actual completion location if available
+  if (completionLocation) {
+    booking.dropoff = {
+      latitude: completionLocation.latitude,
+      longitude: completionLocation.longitude,
+      // preserve existing address if end address is not provided
+      address: completionLocation.address || (booking.dropoff && booking.dropoff.address) || undefined
+    };
+  }
   await booking.save();
 
   // Wallet operations (best effort)
@@ -133,6 +154,12 @@ async function completeTrip(bookingId, endLocation, options = {}) {
         vehicleType: booking.vehicleType,
         startedAt,
         completedAt,
+        // Persist final dropoff location for this trip if available
+        ...(completionLocation ? { dropoffLocation: {
+          latitude: completionLocation.latitude,
+          longitude: completionLocation.longitude,
+          address: completionLocation.address
+        } } : {}),
         commission,
         netIncome: driverEarnings
       }
