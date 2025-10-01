@@ -7,7 +7,7 @@ const rateLimit = require('express-rate-limit');
 const { Server } = require('socket.io');
 require('dotenv').config();
 
-const { connectMongo } = require('./config/mongo');
+const { connectMongo } = require('../config/mongo');
 const apiRoutes = require('./routes');
 const { initializeSocket } = require('./services/socketService');
 const positionUpdateService = require('./services/positionUpdate');
