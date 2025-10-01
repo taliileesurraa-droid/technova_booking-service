@@ -1,6 +1,7 @@
 const bookingService = require('../services/bookingService');
 const errorHandler = require('../utils/errorHandler');
 const bookingEvents = require('../events/bookingEvents');
+const logger = require('../utils/logger');
 
 exports.create = async (req, res) => {
   try {
@@ -86,10 +87,20 @@ exports.assign = async (req, res) => {
   try {
     const bookingId = req.params.id;
     const { driverId, dispatcherId, passengerId } = req.body;
+    try { logger.info('[route] POST /v1/bookings/:id/assign', { by: req.user && req.user.id, role: req.user && req.user.type, bookingId, driverId, dispatcherId, passengerId }); } catch (_) {}
     if (!driverId) return res.status(400).json({ message: 'Driver ID is required for assignment' });
     if (!dispatcherId) return res.status(400).json({ message: 'Dispatcher ID is required for assignment' });
     const result = await bookingService.assignDriver({ bookingId, driverId, dispatcherId, passengerId });
     bookingEvents.emitBookingAssigned(String(bookingId), String(driverId));
+    try {
+      const b = result && result.booking;
+      logger.info('[assign] success', {
+        bookingId: String(bookingId),
+        driverId: String(driverId),
+        passengerId: b && b.passengerId,
+        vehicleType: b && b.vehicleType
+      });
+    } catch (_) {}
     return res.json(result);
   } catch (e) { errorHandler(res, e); }
 }
