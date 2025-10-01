@@ -1,4 +1,5 @@
 const { broadcast, sendMessageToSocketId } = require('../sockets/utils');
+const logger = require('../utils/logger');
 
 function emitBookingCreatedToNearestPassengers(payload, targets) {
   try {
@@ -15,6 +16,7 @@ function emitBookingUpdate(bookingId, patch) {
 
 function emitBookingAssigned(bookingId, driverId) {
   try {
+    try { logger.info('[events] booking:assigned', { bookingId, driverId }); } catch (_) {}
     broadcast('booking:assigned', { bookingId, driverId });
   } catch (_) {}
 }
