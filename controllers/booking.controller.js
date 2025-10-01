@@ -53,12 +53,13 @@ exports.adminCreate = async (req, res) => {
       vehicleType,
       pickup,
       dropoff,
-      authHeader: req.headers && req.headers.authorization ? { Authorization: req.headers.authorization } : undefined
+      authHeader: req.headers && req.headers.authorization ? { Authorization: req.headers.authorization } : undefined,
+      skipPassengerMeta: true
     });
     return res.status(201).json({
       id: String(booking._id),
       passengerId: String(booking.passengerId),
-      passenger: { id: String(booking.passengerId), name: booking.passengerName, phone: booking.passengerPhone },
+      passenger: (booking.passengerName || booking.passengerPhone) ? { id: String(booking.passengerId), name: booking.passengerName, phone: booking.passengerPhone } : undefined,
       vehicleType: booking.vehicleType,
       pickup: booking.pickup,
       dropoff: booking.dropoff,
@@ -160,7 +161,7 @@ exports.nearby = async (req, res) => {
     if (!isFinite(latitude) || !isFinite(longitude)) {
       return res.status(400).json({ message: 'Valid latitude and longitude are required' });
     }
-    const result = await bookingService.listNearbyBookings({ latitude, longitude, radiusKm, vehicleType, limit, driverId: req.user && req.user.type === 'driver' ? String(req.user.id) : undefined });
+    const result = await bookingService.listNearbyBookings({ latitude, longitude, radiusKm, vehicleType, limit, driverId: req.user && req.user.type === 'driver' ? String(req.user.id) : undefined, headers: req.headers || {} });
     return res.json(result);
   } catch (e) { errorHandler(res, e); }
 }

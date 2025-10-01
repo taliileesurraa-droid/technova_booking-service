@@ -56,14 +56,20 @@ async function resolvePassengerMeta(passengerId, jwtUser, authHeader) {
   return { passengerName, passengerPhone };
 }
 
-async function createBooking({ passengerId, jwtUser, vehicleType, pickup, dropoff, authHeader }) {
+async function createBooking({ passengerId, jwtUser, vehicleType, pickup, dropoff, authHeader, skipPassengerMeta = false }) {
   if (!pickup || !dropoff) {
     const err = new Error('Pickup and dropoff locations are required');
     err.status = 400;
     throw err;
   }
   const est = await estimateFare({ vehicleType, pickup, dropoff });
-  const { passengerName, passengerPhone } = await resolvePassengerMeta(passengerId, jwtUser, authHeader);
+  let passengerName;
+  let passengerPhone;
+  if (!skipPassengerMeta) {
+    const meta = await resolvePassengerMeta(passengerId, jwtUser, authHeader);
+    passengerName = meta.passengerName;
+    passengerPhone = meta.passengerPhone;
+  }
   const booking = await Booking.create({
     passengerId,
     passengerName,
@@ -400,7 +406,7 @@ async function assignDriver({ bookingId, driverId, dispatcherId, passengerId }) 
   return { booking, assignment };
 }
 
-async function listNearbyBookings({ latitude, longitude, radiusKm = 5, vehicleType, limit = 20, driverId }) {
+async function listNearbyBookings({ latitude, longitude, radiusKm = 5, vehicleType, limit = 20, driverId, headers }) {
   const query = { status: 'requested', ...(vehicleType ? { vehicleType } : {}) };
   const rows = await Booking.find(query).sort({ createdAt: -1 }).lean();
   const withDistance = rows.map(b => {
@@ -421,10 +427,33 @@ async function listNearbyBookings({ latitude, longitude, radiusKm = 5, vehicleTy
     } catch (_) {}
   }
   const selected = filtered.slice(0, Math.min(parseInt(limit, 10) || 20, 100));
+  // Attempt to enrich passenger info for drivers if missing on booking
+  let passengerInfoMap = {};
+  try {
+    const missingPassengerIds = [...new Set(selected
+      .map(x => x.booking)
+      .filter(b => b && (!b.passengerName || !b.passengerPhone))
+      .map(b => String(b.passengerId))
+      .filter(Boolean))];
+    if (missingPassengerIds.length) {
+      const { getPassengerById } = require('../integrations/userServiceClient');
+      const authHeader = headers && headers.authorization ? { Authorization: headers.authorization } : undefined;
+      const lookups = await Promise.all(missingPassengerIds.map(async (pid) => {
+        try {
+          const info = await getPassengerById(pid, { headers: authHeader });
+          return info ? [pid, { id: pid, name: info.name, phone: info.phone }] : null;
+        } catch (_) { return null; }
+      }));
+      passengerInfoMap = Object.fromEntries(lookups.filter(Boolean));
+    }
+  } catch (_) {}
+
   return selected.map(x => ({
     id: String(x.booking._id),
     passengerId: x.booking.passengerId,
-    passenger: (x.booking.passengerName || x.booking.passengerPhone) ? { id: x.booking.passengerId, name: x.booking.passengerName, phone: x.booking.passengerPhone } : undefined,
+    passenger: (x.booking.passengerName || x.booking.passengerPhone)
+      ? { id: x.booking.passengerId, name: x.booking.passengerName, phone: x.booking.passengerPhone }
+      : (passengerInfoMap[String(x.booking.passengerId)] || undefined),
     vehicleType: x.booking.vehicleType,
     pickup: x.booking.pickup,
     dropoff: x.booking.dropoff,
