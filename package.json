@@ -1,14 +1,14 @@
 {
   "name": "express-mongo-cab",
   "version": "1.0.0",
-  "main": "userservice/server.js",
+  "main": "server.js",
   "engines": {
     "node": ">=18"
   },
   "scripts": {
-    "dev": "nodemon userservice/server.js",
-    "start": "node userservice/server.js",
-    "start:all": "node userservice/server.js",
+    "dev": "nodemon server.js",
+    "start": "node server.js",
+    "start:all": "node server.js",
     "test": "mocha \"tests/**/*.test.js\""
   },
   "keywords": [],

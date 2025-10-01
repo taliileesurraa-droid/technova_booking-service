@@ -27,7 +27,7 @@ const LocationSchema = new mongoose.Schema({
   address: { type: String }
 }, { _id: false });
 
-const VehicleTypeEnum = ['mini', 'sedan', 'van'];
+const VehicleTypeEnum = ['mini', 'sedan', 'van', 'motorbike', 'bajaj'] ;
 
 const Wallet =  mongoose.model('Wallet', WalletSchema);
 const Transaction =  mongoose.model('Transaction', TransactionSchema);
@@ -38,4 +38,5 @@ module.exports = {
   LocationSchema,
   VehicleTypeEnum
 };
+
 
