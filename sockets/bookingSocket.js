@@ -272,6 +272,42 @@ module.exports = (io, socket) => {
       const point = await lifecycle.updateTripLocation(bookingId, String(socket.user.id), location);
       bookingEvents.emitTripOngoing(io, bookingId, point);
       try { logger.info('[socket->room] trip_ongoing', { bookingId, lat: point.lat, lon: point.lng }); } catch (_) {}
+
+      // Live pricing recompute based on current path length from TripHistory
+      try {
+        const TripHistory = require('../models/tripHistoryModel');
+        const { calculateFare } = require('../services/pricingService');
+        const { haversineKm } = require('../utils/distance');
+        const trip = await TripHistory.findOne({ bookingId });
+        let distanceKm = 0;
+        if (trip && Array.isArray(trip.locations) && trip.locations.length >= 2) {
+          for (let i = 1; i < trip.locations.length; i++) {
+            const a = trip.locations[i - 1];
+            const b = trip.locations[i];
+            distanceKm += haversineKm({ latitude: a.lat, longitude: a.lng }, { latitude: b.lat, longitude: b.lng });
+          }
+        } else if (booking.pickup && location) {
+          distanceKm = haversineKm({ latitude: booking.pickup.latitude, longitude: booking.pickup.longitude }, { latitude: location.latitude, longitude: location.longitude });
+        }
+        const elapsedMinutes = 0; // optional: compute from startedAt if needed
+        const estFare = await calculateFare(distanceKm, elapsedMinutes, booking.vehicleType, 1, 0);
+        const payloadUpdate = {
+          bookingId: String(booking._id),
+          vehicleType: booking.vehicleType,
+          pickup: booking.pickup,
+          dropoff: booking.dropoff,
+          distanceKm,
+          fareEstimated: estFare,
+          fareBreakdown: {
+            base: undefined,
+            distanceCost: undefined,
+            timeCost: undefined,
+            waitingCost: undefined,
+            surgeMultiplier: 1
+          }
+        };
+        io.to(`booking:${String(booking._id)}`).emit('pricing:update', payloadUpdate);
+      } catch (e) { try { logger.error('[trip_ongoing] live pricing failed', e); } catch (_) {} }
     } catch (err) {
       logger.error('[trip_ongoing] error', err);
       socket.emit('booking_error', { message: 'Failed to update trip location', source: 'trip_ongoing' });
