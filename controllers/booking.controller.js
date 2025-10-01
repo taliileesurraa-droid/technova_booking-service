@@ -41,6 +41,38 @@ exports.create = async (req, res) => {
   } catch (e) { errorHandler(res, e); }
 }
 
+// Admin creates a booking on behalf of a passenger
+exports.adminCreate = async (req, res) => {
+  try {
+    const { passengerId, vehicleType, pickup, dropoff } = req.body || {};
+    if (!passengerId) return res.status(400).json({ message: 'passengerId is required' });
+    if (!pickup || !dropoff) return res.status(400).json({ message: 'pickup and dropoff are required' });
+    const booking = await bookingService.createBooking({
+      passengerId: String(passengerId),
+      jwtUser: null,
+      vehicleType,
+      pickup,
+      dropoff,
+      authHeader: req.headers && req.headers.authorization ? { Authorization: req.headers.authorization } : undefined
+    });
+    return res.status(201).json({
+      id: String(booking._id),
+      passengerId: String(booking.passengerId),
+      passenger: { id: String(booking.passengerId), name: booking.passengerName, phone: booking.passengerPhone },
+      vehicleType: booking.vehicleType,
+      pickup: booking.pickup,
+      dropoff: booking.dropoff,
+      distanceKm: booking.distanceKm,
+      fareEstimated: booking.fareEstimated,
+      fareFinal: booking.fareFinal,
+      fareBreakdown: booking.fareBreakdown,
+      status: booking.status,
+      createdAt: booking.createdAt,
+      updatedAt: booking.updatedAt
+    });
+  } catch (e) { errorHandler(res, e); }
+}
+
 exports.list = async (req, res) => {
   try {
     const rows = await bookingService.listBookings({ requester: req.user, headers: req.headers || {} });

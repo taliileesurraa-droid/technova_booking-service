@@ -5,6 +5,8 @@ const { authenticate, authorize } = require('../../middleware/auth');
 const { VehicleTypeEnum } = require('../../models/common');
 
 router.post('/', authenticate, authorize('passenger'), ctrl.create);
+// Admin creates bookings on behalf of passengers
+router.post('/admin', authenticate, authorize('admin','superadmin','staff'), ctrl.adminCreate);
 router.get('/', authenticate, authorize('passenger','admin','superadmin'), ctrl.list);
 // Nearby bookings for drivers
 router.get('/nearby', authenticate, authorize('driver','admin','staff','superadmin'), ctrl.nearby);
