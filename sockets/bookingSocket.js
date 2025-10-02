@@ -319,6 +319,7 @@ module.exports = (io, socket) => {
             surgeMultiplier: 1
           }
         };
+        try { logger.info('[events] pricing:update (live)', payloadUpdate); } catch (_) {}
         io.to(`booking:${String(booking._id)}`).emit('pricing:update', payloadUpdate);
       } catch (e) { try { logger.error('[trip_ongoing] live pricing failed', e); } catch (_) {} }
     } catch (err) {
