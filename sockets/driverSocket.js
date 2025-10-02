@@ -12,6 +12,8 @@ module.exports = (io, socket) => {
       try {
         const driverRoom = `driver:${String(socket.user.id)}`;
         socket.join(driverRoom);
+        // Also join a shared drivers room for optional broadcasts/fallbacks
+        try { socket.join('drivers'); } catch (_) {}
       } catch (_) {}
       (async () => {
         try {
