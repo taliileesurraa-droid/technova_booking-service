@@ -1,4 +1,5 @@
 {
+<<<<<<< HEAD
 	"info": {
 		"_postman_id": "1d5abc03-561c-4269-931c-c2ae938f5e4a",
 		"name": "Booking Service API collection",
@@ -3034,4 +3035,165 @@
 			"value": ""
 		}
 	]
+=======
+  "info": {
+    "name": "Ride Service API - Updated",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        { "name": "Passenger Register", "request": { "method": "POST", "url": "{{baseUrl}}/v1/auth/passenger/register" } },
+        { "name": "Passenger Login", "request": { "method": "POST", "url": "{{baseUrl}}/v1/auth/passenger/login" } },
+        { "name": "Staff Login", "request": { "method": "POST", "url": "{{baseUrl}}/v1/auth/staff/login" } },
+        { "name": "Admin Login", "request": { "method": "POST", "url": "{{baseUrl}}/v1/auth/admin/login" } }
+      ]
+    },
+    {
+      "name": "Bookings",
+      "item": [
+        { "name": "Create (Passenger)", "request": { "method": "POST", "url": "{{baseUrl}}/v1/bookings" } },
+        { "name": "Create (Admin)", "request": { "method": "POST", "url": "{{baseUrl}}/v1/bookings/admin" } },
+        { "name": "List", "request": { "method": "GET", "url": "{{baseUrl}}/v1/bookings" } },
+        { "name": "Nearby", "request": { "method": "GET", "url": "{{baseUrl}}/v1/bookings/nearby?latitude={{lat}}&longitude={{lng}}&radiusKm=5" } },
+        { "name": "Get", "request": { "method": "GET", "url": "{{baseUrl}}/v1/bookings/{{bookingId}}" } },
+        { "name": "Update", "request": { "method": "PUT", "url": "{{baseUrl}}/v1/bookings/{{bookingId}}" } },
+        { "name": "Delete", "request": { "method": "DELETE", "url": "{{baseUrl}}/v1/bookings/{{bookingId}}" } },
+        { "name": "Lifecycle", "request": { "method": "POST", "url": "{{baseUrl}}/v1/bookings/{{bookingId}}/lifecycle" } },
+        { "name": "Assign (Admin)", "request": { "method": "POST", "url": "{{baseUrl}}/v1/bookings/{{bookingId}}/assign" } },
+        { "name": "Estimate (Admin)", "request": { "method": "POST", "url": "{{baseUrl}}/v1/bookings/estimate" } },
+        { "name": "Rate Passenger (Driver)", "request": { "method": "POST", "url": "{{baseUrl}}/v1/bookings/{{bookingId}}/rate-passenger" } },
+        { "name": "Rate Driver (Passenger)", "request": { "method": "POST", "url": "{{baseUrl}}/v1/bookings/{{bookingId}}/rate-driver" } }
+      ]
+    },
+    {
+      "name": "Assignments (Admin/Staff)",
+      "item": [
+        { "name": "Create", "request": { "method": "POST", "url": "{{baseUrl}}/v1/assignments" } },
+        { "name": "List", "request": { "method": "GET", "url": "{{baseUrl}}/v1/assignments" } },
+        { "name": "Get", "request": { "method": "GET", "url": "{{baseUrl}}/v1/assignments/{{assignmentId}}" } },
+        { "name": "Update", "request": { "method": "PUT", "url": "{{baseUrl}}/v1/assignments/{{assignmentId}}" } },
+        { "name": "Delete", "request": { "method": "DELETE", "url": "{{baseUrl}}/v1/assignments/{{assignmentId}}" } }
+      ]
+    },
+    {
+      "name": "Trips",
+      "item": [
+        { "name": "List", "request": { "method": "GET", "url": "{{baseUrl}}/v1/trips" } },
+        { "name": "Get", "request": { "method": "GET", "url": "{{baseUrl}}/v1/trips/{{tripId}}" } },
+        { "name": "Delete (Admin/Staff)", "request": { "method": "DELETE", "url": "{{baseUrl}}/v1/trips/{{tripId}}" } }
+      ]
+    },
+    {
+      "name": "Pricing (Admin)",
+      "item": [
+        { "name": "Create", "request": { "method": "POST", "url": "{{baseUrl}}/v1/pricing" } },
+        { "name": "List", "request": { "method": "GET", "url": "{{baseUrl}}/v1/pricing" } },
+        { "name": "Get (by Id or latest)", "request": { "method": "GET", "url": "{{baseUrl}}/v1/pricing/{{pricingIdOrLatest}}" } },
+        { "name": "Update + Broadcast", "request": { "method": "PUT", "url": "{{baseUrl}}/v1/pricing/{{pricingId}}" } },
+        { "name": "Recalculate by Booking", "request": { "method": "POST", "url": "{{baseUrl}}/v1/pricing/recalculate" } },
+        { "name": "Delete", "request": { "method": "DELETE", "url": "{{baseUrl}}/v1/pricing/{{pricingId}}" } }
+      ]
+    },
+    {
+      "name": "Drivers",
+      "item": [
+        { "name": "List (Admin/Staff)", "request": { "method": "GET", "url": "{{baseUrl}}/v1/drivers" } },
+        { "name": "Available Nearby", "request": { "method": "GET", "url": "{{baseUrl}}/v1/drivers/available?latitude={{lat}}&longitude={{lng}}" } },
+        { "name": "Get (Admin/Staff)", "request": { "method": "GET", "url": "{{baseUrl}}/v1/drivers/{{driverId}}" } },
+        { "name": "Set Availability (Driver)", "request": { "method": "POST", "url": "{{baseUrl}}/v1/drivers/{{driverId}}/availability" } },
+        { "name": "Update Location (Driver)", "request": { "method": "POST", "url": "{{baseUrl}}/v1/drivers/{{driverId}}/location" } },
+        { "name": "Wallet", "request": { "method": "GET", "url": "{{baseUrl}}/v1/drivers/{{driverId}}/wallet" } },
+        { "name": "Wallet Transactions", "request": { "method": "GET", "url": "{{baseUrl}}/v1/drivers/{{driverId}}/wallet/transactions" } },
+        { "name": "Withdraw", "request": { "method": "POST", "url": "{{baseUrl}}/v1/drivers/{{driverId}}/wallet/withdraw" } },
+        { "name": "Adjust Balance (Admin)", "request": { "method": "POST", "url": "{{baseUrl}}/v1/drivers/{{driverId}}/wallet/adjust" } },
+        { "name": "Estimate Fare (Passenger)", "request": { "method": "POST", "url": "{{baseUrl}}/v1/drivers/estimate-fare" } },
+        { "name": "Estimate Fare for Booking (Driver)", "request": { "method": "GET", "url": "{{baseUrl}}/v1/drivers/estimate-fare/{{bookingId}}" } },
+        { "name": "Discover and Estimate", "request": { "method": "POST", "url": "{{baseUrl}}/v1/drivers/discover-and-estimate" } },
+        { "name": "Payment Options", "request": { "method": "GET", "url": "{{baseUrl}}/v1/drivers/payment-options" } },
+        { "name": "Set Payment Preference", "request": { "method": "POST", "url": "{{baseUrl}}/v1/drivers/payment-preference" } }
+      ]
+    },
+    {
+      "name": "Passengers",
+      "item": [
+        { "name": "List (Admin/Staff)", "request": { "method": "GET", "url": "{{baseUrl}}/v1/passengers" } },
+        { "name": "Create (Admin/Staff)", "request": { "method": "POST", "url": "{{baseUrl}}/v1/passengers" } },
+        { "name": "Get (Admin/Staff)", "request": { "method": "GET", "url": "{{baseUrl}}/v1/passengers/{{passengerId}}" } },
+        { "name": "Update (Admin/Staff)", "request": { "method": "PUT", "url": "{{baseUrl}}/v1/passengers/{{passengerId}}" } },
+        { "name": "Delete (Admin/Staff)", "request": { "method": "DELETE", "url": "{{baseUrl}}/v1/passengers/{{passengerId}}" } },
+        { "name": "Me - Profile", "request": { "method": "GET", "url": "{{baseUrl}}/v1/passengers/me/profile" } },
+        { "name": "Me - Update Profile", "request": { "method": "PUT", "url": "{{baseUrl}}/v1/passengers/me/profile" } },
+        { "name": "Me - Delete Account", "request": { "method": "DELETE", "url": "{{baseUrl}}/v1/passengers/me" } },
+        { "name": "Rate Driver", "request": { "method": "POST", "url": "{{baseUrl}}/v1/passengers/drivers/{{driverId}}/rate" } }
+      ]
+    },
+    {
+      "name": "Analytics (Admin)",
+      "item": [
+        { "name": "Dashboard", "request": { "method": "GET", "url": "{{baseUrl}}/v1/analytics/dashboard" } },
+        { "name": "Daily Report", "request": { "method": "GET", "url": "{{baseUrl}}/v1/analytics/reports/daily" } },
+        { "name": "Weekly Report", "request": { "method": "GET", "url": "{{baseUrl}}/v1/analytics/reports/weekly" } },
+        { "name": "Monthly Report", "request": { "method": "GET", "url": "{{baseUrl}}/v1/analytics/reports/monthly" } },
+        { "name": "Driver Earnings", "request": { "method": "GET", "url": "{{baseUrl}}/v1/analytics/earnings/driver" } },
+        { "name": "Set Commission", "request": { "method": "POST", "url": "{{baseUrl}}/v1/analytics/commission" } },
+        { "name": "Get Commission", "request": { "method": "GET", "url": "{{baseUrl}}/v1/analytics/commission" } },
+        { "name": "Ride History", "request": { "method": "GET", "url": "{{baseUrl}}/v1/analytics/rides/history" } },
+        { "name": "Trips History by User", "request": { "method": "GET", "url": "{{baseUrl}}/v1/analytics/trips/history/{{userType}}/{{userId}}" } },
+        { "name": "Finance Overview", "request": { "method": "GET", "url": "{{baseUrl}}/v1/analytics/finance/overview" } },
+        { "name": "Rewards (Passenger)", "request": { "method": "GET", "url": "{{baseUrl}}/v1/analytics/rewards/passenger" } },
+        { "name": "Rewards (Driver)", "request": { "method": "GET", "url": "{{baseUrl}}/v1/analytics/rewards/driver" } }
+      ]
+    },
+    {
+      "name": "Live",
+      "item": [
+        { "name": "Create", "request": { "method": "POST", "url": "{{baseUrl}}/v1/live" } },
+        { "name": "List", "request": { "method": "GET", "url": "{{baseUrl}}/v1/live" } },
+        { "name": "Get", "request": { "method": "GET", "url": "{{baseUrl}}/v1/live/{{liveId}}" } },
+        { "name": "Update", "request": { "method": "PUT", "url": "{{baseUrl}}/v1/live/{{liveId}}" } },
+        { "name": "Delete", "request": { "method": "DELETE", "url": "{{baseUrl}}/v1/live/{{liveId}}" } },
+        { "name": "Push (Driver/Passenger)", "request": { "method": "POST", "url": "{{baseUrl}}/v1/live/push" } }
+      ]
+    },
+    {
+      "name": "Mapping",
+      "item": [
+        { "name": "Route", "request": { "method": "POST", "url": "{{baseUrl}}/v1/mapping/route" } },
+        { "name": "ETA", "request": { "method": "POST", "url": "{{baseUrl}}/v1/mapping/eta" } },
+        { "name": "Booking Progress", "request": { "method": "GET", "url": "{{baseUrl}}/v1/mapping/booking/{{bookingId}}/progress" } }
+      ]
+    },
+    {
+      "name": "Wallet",
+      "item": [
+        { "name": "Topup", "request": { "method": "POST", "url": "{{baseUrl}}/v1/wallet/topup" } },
+        { "name": "Transactions (me)", "request": { "method": "GET", "url": "{{baseUrl}}/v1/wallet/transactions" } },
+        { "name": "Transactions (by user)", "request": { "method": "GET", "url": "{{baseUrl}}/v1/wallet/transactions/{{userId}}" } },
+        { "name": "Withdraw (Driver)", "request": { "method": "POST", "url": "{{baseUrl}}/v1/wallet/withdraw" } }
+      ]
+    },
+    {
+      "name": "Payment Options",
+      "item": [
+        { "name": "Create", "request": { "method": "POST", "url": "{{baseUrl}}/v1/payment" } },
+        { "name": "List", "request": { "method": "GET", "url": "{{baseUrl}}/v1/payment" } },
+        { "name": "Get", "request": { "method": "GET", "url": "{{baseUrl}}/v1/payment/{{paymentId}}" } },
+        { "name": "Update", "request": { "method": "PUT", "url": "{{baseUrl}}/v1/payment/{{paymentId}}" } },
+        { "name": "Delete", "request": { "method": "DELETE", "url": "{{baseUrl}}/v1/payment/{{paymentId}}" } }
+      ]
+    },
+    {
+      "name": "Admins (Admin)",
+      "item": [
+        { "name": "List", "request": { "method": "GET", "url": "{{baseUrl}}/v1/admins" } },
+        { "name": "Get", "request": { "method": "GET", "url": "{{baseUrl}}/v1/admins/{{adminId}}" } },
+        { "name": "Create (Superadmin)", "request": { "method": "POST", "url": "{{baseUrl}}/v1/admins" } },
+        { "name": "Update (Superadmin)", "request": { "method": "PUT", "url": "{{baseUrl}}/v1/admins/{{adminId}}" } },
+        { "name": "Delete (Superadmin)", "request": { "method": "DELETE", "url": "{{baseUrl}}/v1/admins/{{adminId}}" } }
+      ]
+    }
+  ]
+>>>>>>> f96ee31 (docs(postman): add newpost.json with updated endpoints)
 }
