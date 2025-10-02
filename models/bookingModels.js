@@ -47,8 +47,35 @@
         timeCost: Number,
         waitingCost: Number,
         surgeMultiplier: Number,
+        // Enhanced pricing breakdown fields
+        surgeFactor: Number,
+        timeOfDayMultiplier: Number,
+        demandMultiplier: Number,
+        driverPremium: Number,
+        platformFee: Number,
+        taxes: Number,
+        perKm: Number,
+        perMinute: Number,
+        waitingPerMinute: Number,
+        minimumFare: Number,
+        maximumFare: Number,
+        actualDistance: Number,
+        actualDuration: Number
       },
       distanceKm: { type: Number },
+      
+      // Enhanced pricing calculation metadata
+      pricingCalculation: {
+        calculatedAt: Date,
+        source: { type: String, enum: ['system', 'driver', 'admin'], default: 'system' },
+        ruleId: String,
+        version: Number
+      },
+      
+      // Trip actual values for final pricing
+      actualDistanceKm: { type: Number },
+      actualDurationMinutes: { type: Number },
+      waitingTimeMinutes: { type: Number },
 
       // Payments
       paymentMethod: { type: String, enum: ['cash','wallet','telebirr','cbe','card','santimpay'] },

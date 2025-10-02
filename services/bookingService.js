@@ -81,6 +81,7 @@ async function createBooking({ passengerId, jwtUser, vehicleType, pickup, dropof
     fareEstimated: est.fareEstimated,
     fareBreakdown: est.fareBreakdown
   });
+  
   return booking;
 }
 
@@ -355,6 +356,7 @@ async function updateBookingLifecycle({ requester, id, status }) {
     await booking.save();
     try { require('../utils/logger').info('[lifecycle] saved', { id: String(booking._id), status: booking.status }); } catch (_) {}
   }
+  
   await TripHistory.create({ bookingId: booking._id, driverId: booking.driverId, passengerId: booking.passengerId, status: booking.status });
   try { require('../utils/logger').info('[lifecycle] done', { id: String(booking._id), status: booking.status, driverId: booking.driverId }); } catch (_) {}
   return booking;
