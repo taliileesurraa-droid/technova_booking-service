@@ -49,6 +49,18 @@ exports.list = async (req, res) => {
     const didMap = Object.fromEntries(drivers.map(d => [String(d._id), d]));
     const bidMap = Object.fromEntries(bookings.map(b => [String(b._id), b]));
 
+    // fetch additional driver info for non-ObjectId driverIds if missing
+    let extraDriverInfo = {};
+    try {
+      const nonObjectDriverIds = driverIds.filter(id => !Types.ObjectId.isValid(id));
+      if (nonObjectDriverIds.length) {
+        const { getDriversByIds } = require('../integrations/userServiceClient');
+        const headers = req.headers && req.headers.authorization ? { Authorization: req.headers.authorization } : undefined;
+        const infos = await getDriversByIds(nonObjectDriverIds, { headers });
+        extraDriverInfo = Object.fromEntries((infos || []).map(i => [String(i.id), { id: String(i.id), name: i.name, phone: i.phone }]));
+      }
+    } catch (_) {}
+
     const data = rows.map(r => {
       const b = bidMap[String(r.bookingId)];
       return {
@@ -61,7 +73,7 @@ exports.list = async (req, res) => {
         createdAt: r.createdAt,
         updatedAt: r.updatedAt,
         passenger: toBasicUser(pidMap[String(r.passengerId)]) || (b ? { id: String(r.passengerId), name: b.passengerName, phone: b.passengerPhone } : undefined),
-        driver: toBasicUser(didMap[String(r.driverId)]),
+        driver: toBasicUser(didMap[String(r.driverId)]) || extraDriverInfo[String(r.driverId)] || (String(req.user?.id) === String(r.driverId) ? { id: String(r.driverId), name: req.user?.name, phone: req.user?.phone, email: req.user?.email } : undefined),
         booking: b ? {
           id: String(b._id),
           vehicleType: b.vehicleType,

@@ -12,6 +12,22 @@ async function updateAndBroadcast(req, res) {
     // Include bookingId if present in request body (for clients tracking pricing per booking)
     const payload = { ...item.toObject?.() ? item.toObject() : item, ...(req.body && req.body.bookingId ? { bookingId: String(req.body.bookingId) } : {}) };
     broadcast('pricing:update', payload);
+
+    // Auto-recalculate pricing for active bookings of this vehicle type and broadcast with location
+    try {
+      const { Booking } = require('../models/bookingModels');
+      const activeBookings = await Booking.find({
+        vehicleType: item.vehicleType,
+        status: { $in: ['requested', 'accepted', 'ongoing'] }
+      }).select({ _id: 1 }).limit(200).lean();
+      for (const b of activeBookings) {
+        try {
+          const p = await recalcForBooking(String(b._id));
+          try { logger.info('[events] pricing:update (admin auto-recalc)', p); } catch (_) {}
+          broadcast('pricing:update', p);
+        } catch (e) { /* continue */ }
+      }
+    } catch (e) { /* ignore auto-recalc errors */ }
     return res.json(item);
   } catch (e) { return res.status(500).json({ message: e.message }); }
 }
