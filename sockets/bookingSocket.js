@@ -110,6 +110,8 @@ module.exports = (io, socket) => {
             passenger: { id: passengerId, name: socket.user.name, phone: socket.user.phone }
           };
           const payloadForDriver = { id: String(booking._id), bookingId: String(booking._id), booking: bookingDetails, patch, user: { id: passengerId, type: 'passenger' } };
+          // Also prepare a broadcast payload for the shared 'drivers' room as a fallback delivery channel
+          const payloadForDriversRoom = { id: String(booking._id), bookingId: String(booking._id), booking: bookingDetails, patch };
           let sentCount = 0;
           for (const drv of targetDrivers) {
             const driverId = String(drv._id);
@@ -120,6 +122,8 @@ module.exports = (io, socket) => {
               sentCount++;
             }
           }
+          // Fallback broadcast to all connected drivers to reduce missed deliveries
+          try { io.to('drivers').emit('booking:new', payloadForDriversRoom); } catch (_) {}
           try { logger.info('[socket->drivers] booking:new broadcast', { bookingId: String(booking._id), sent: sentCount, considered: targetDrivers.length }); } catch (_) {}
         } else {
           try { logger.info('[socket->drivers] no eligible driver (package/distance)', { bookingId: String(booking._id) }); } catch (_) {}
