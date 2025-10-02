@@ -188,6 +188,23 @@ module.exports = (io, socket) => {
         // Additionally notify passenger room directly to avoid missing room join timing
         try { if (updated.passengerId) io.to(`passenger:${String(updated.passengerId)}`).emit('booking_accept', acceptPayload); } catch (_) {}
         try { if (updated.passengerId) io.to(`passenger:${String(updated.passengerId)}`).emit('booking:accept', acceptPayload); } catch (_) {}
+
+        // Emit immediate booking:status snapshot to room and passenger room for clients relying on status stream
+        try {
+          const statusSnapshot = {
+            id: String(updated._id),
+            bookingId: String(updated._id),
+            status: 'accepted',
+            driverId: String(socket.user.id),
+            passengerId: String(updated.passengerId || ''),
+            vehicleType: updated.vehicleType,
+            pickup: updated.pickup,
+            dropoff: updated.dropoff,
+            acceptedAt: updated.acceptedAt
+          };
+          io.to(room).emit('booking:status', statusSnapshot);
+          try { if (updated.passengerId) io.to(`passenger:${String(updated.passengerId)}`).emit('booking:status', statusSnapshot); } catch (_) {}
+        } catch (_) {}
       } catch (_) {}
 
       // Inform nearby drivers to remove
@@ -247,6 +264,8 @@ module.exports = (io, socket) => {
       if (!booking) return socket.emit('booking_error', { message: 'Booking not found or not assigned to you', source: 'trip_started' });
       const updated = await lifecycle.startTrip(bookingId, startLocation);
       bookingEvents.emitTripStarted(io, updated);
+      // Also emit an initial trip_ongoing update at the start location for clients expecting continuous stream from start
+      try { if (startLocation) bookingEvents.emitTripOngoing(io, updated, startLocation); } catch (_) {}
       try { logger.info('[socket->room] trip_started', { bookingId: String(updated._id) }); } catch (_) {}
     } catch (err) {
       logger.error('[trip_started] error', err);
