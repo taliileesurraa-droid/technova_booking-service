@@ -23,6 +23,7 @@ exports.list = async (req, res) => {
     if (userType === 'passenger') query.passengerId = String(req.user.id);
     if (status) query.status = status;
 
+    // Fetch trip histories
     const rows = await TripHistory.find(query)
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -39,6 +40,7 @@ exports.list = async (req, res) => {
     const validDriverIds = driverIds.filter(id => Types.ObjectId.isValid(id));
     const validBookingIds = bookingIds.filter(id => Types.ObjectId.isValid(id));
 
+    // Fetch passengers, drivers, and bookings
     const [passengers, drivers, bookings] = await Promise.all([
       validPassengerIds.length ? Passenger.find({ _id: { $in: validPassengerIds } }).select({ _id: 1, name: 1, phone: 1, email: 1 }).lean() : Promise.resolve([]),
       validDriverIds.length ? Driver.find({ _id: { $in: validDriverIds } }).select({ _id: 1, name: 1, phone: 1, email: 1, vehicleType: 1 }).lean() : Promise.resolve([]),
@@ -49,7 +51,7 @@ exports.list = async (req, res) => {
     const didMap = Object.fromEntries(drivers.map(d => [String(d._id), d]));
     const bidMap = Object.fromEntries(bookings.map(b => [String(b._id), b]));
 
-    // fetch additional driver info for non-ObjectId driverIds if missing
+    // Fetch extra driver info for non-ObjectId driverIds
     let extraDriverInfo = {};
     try {
       const nonObjectDriverIds = driverIds.filter(id => !Types.ObjectId.isValid(id));
@@ -57,12 +59,26 @@ exports.list = async (req, res) => {
         const { getDriversByIds } = require('../integrations/userServiceClient');
         const headers = req.headers && req.headers.authorization ? { Authorization: req.headers.authorization } : undefined;
         const infos = await getDriversByIds(nonObjectDriverIds, { headers });
-        extraDriverInfo = Object.fromEntries((infos || []).map(i => [String(i.id), { id: String(i.id), name: i.name, phone: i.phone }]));
+        extraDriverInfo = Object.fromEntries((infos || []).map(i => [String(i.id), { id: String(i.id), name: i.name, phone: i.phone, email: i.email }]));
       }
     } catch (_) {}
 
+    // Map trips with passenger, driver, and booking info
     const data = rows.map(r => {
       const b = bidMap[String(r.bookingId)];
+
+      let driverDetail = toBasicUser(didMap[String(r.driverId)]) || extraDriverInfo[String(r.driverId)];
+
+      // fallback to logged-in user if driverId matches request user
+      if (!driverDetail && String(req.user?.id) === String(r.driverId)) {
+        driverDetail = {
+          id: String(r.driverId),
+          name: req.user?.name,
+          phone: req.user?.phone,
+          email: req.user?.email
+        };
+      }
+
       return {
         id: String(r._id),
         bookingId: String(r.bookingId),
@@ -73,7 +89,7 @@ exports.list = async (req, res) => {
         createdAt: r.createdAt,
         updatedAt: r.updatedAt,
         passenger: toBasicUser(pidMap[String(r.passengerId)]) || (b ? { id: String(r.passengerId), name: b.passengerName, phone: b.passengerPhone } : undefined),
-        driver: toBasicUser(didMap[String(r.driverId)]) || extraDriverInfo[String(r.driverId)] || (String(req.user?.id) === String(r.driverId) ? { id: String(r.driverId), name: req.user?.name, phone: req.user?.phone, email: req.user?.email } : undefined),
+        driver: driverDetail,
         booking: b ? {
           id: String(b._id),
           vehicleType: b.vehicleType,
@@ -149,5 +165,3 @@ exports.remove = async (req, res) => {
     return res.status(500).json({ message: `Failed to delete trip: ${e.message}` });
   }
 };
-
-
