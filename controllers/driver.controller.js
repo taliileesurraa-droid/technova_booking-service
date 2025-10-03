@@ -58,8 +58,11 @@ const base = {
   get: async (req, res) => {
     try {
       const driver = await Driver.findById(req.params.id)
-        .select('_id name phone email vehicleType available lastKnownLocation rating externalId createdAt updatedAt paymentPreferences')
-        .populate({ path: 'paymentPreferences', select: { name: 1, logo: 1 } })
+        .select('_id name phone email vehicleType available lastKnownLocation rating externalId createdAt updatedAt paymentPreferences paymentPreference')
+        .populate([
+          { path: 'paymentPreferences', select: { name: 1, logo: 1 } },
+          { path: 'paymentPreference', select: { name: 1, logo: 1 } }
+        ])
         .lean();
       
       if (!driver) {
@@ -91,11 +94,20 @@ const base = {
         available: !!driver.available,
         lastKnownLocation: driver.lastKnownLocation || null,
         rating: driver.rating || 5.0,
-        paymentPreferences: (driver.paymentPreferences || []).map(pref => ({
-          _id: String(pref._id),
-          name: pref.name,
-          logo: pref.logo
-        })),
+        paymentPreferences: (() => {
+          // Handle both old paymentPreference and new paymentPreferences
+          let prefs = [];
+          if (driver.paymentPreferences && Array.isArray(driver.paymentPreferences)) {
+            prefs = driver.paymentPreferences;
+          } else if (driver.paymentPreference) {
+            prefs = [driver.paymentPreference];
+          }
+          return prefs.map(pref => ({
+            _id: String(pref._id),
+            name: pref.name,
+            logo: pref.logo
+          }));
+        })(),
         createdAt: driver.createdAt,
         updatedAt: driver.updatedAt
       };
@@ -223,10 +235,36 @@ module.exports = {
       let selectedIds = [];
       try {
         if (req.user && req.user.type === 'driver') {
-          const me = await Driver.findById(String(req.user.id)).select({ paymentPreferences: 1 }).lean();
-          selectedIds = (me && me.paymentPreferences || []).map(id => String(id));
+          // Try multiple ways to find the driver
+          let me = await Driver.findById(String(req.user.id)).select({ paymentPreferences: 1, paymentPreference: 1 }).lean();
+          
+          // Fallback: try by externalId
+          if (!me) {
+            me = await Driver.findOne({ externalId: String(req.user.id) }).select({ paymentPreferences: 1, paymentPreference: 1 }).lean();
+          }
+          
+          // Fallback: try by email or phone
+          if (!me && (req.user.email || req.user.phone || req.user.phoneNumber)) {
+            me = await Driver.findOne({
+              $or: [
+                { email: req.user.email || null },
+                { phone: req.user.phone || req.user.phoneNumber || req.user.mobile || null }
+              ]
+            }).select({ paymentPreferences: 1, paymentPreference: 1 }).lean();
+          }
+          
+          // Handle both old paymentPreference and new paymentPreferences
+          let preferences = [];
+          if (me && me.paymentPreferences) {
+            preferences = me.paymentPreferences;
+          } else if (me && me.paymentPreference) {
+            preferences = [me.paymentPreference];
+          }
+          selectedIds = preferences.map(id => String(id));
         }
-      } catch (_) {}
+      } catch (e) {
+        console.error('Error fetching driver payment preferences:', e);
+      }
       const data = (rows || []).map(o => ({ 
         id: String(o._id || o.id), 
         name: o.name, 

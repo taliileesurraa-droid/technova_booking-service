@@ -62,37 +62,65 @@ exports.topup = async (req, res) => {
     async function resolvePaymentMethod() {
       const pick = (v) => (typeof v === 'string' && v.trim().length) ? v.trim() : null;
       const explicit = pick(paymentMethod);
-      if (explicit) return explicit;
+      if (explicit) {
+        console.log('Using explicit payment method:', explicit);
+        return explicit;
+      }
       // Map paymentOptionId -> name
       try {
         const optId = req.body && (req.body.paymentOptionId || req.body.id);
         if (optId) {
           const PaymentOption = require('../models/paymentOption');
           const po = await PaymentOption.findById(String(optId)).select({ name: 1 }).lean();
-          if (po && po.name) return String(po.name).trim();
+          if (po && po.name) {
+            console.log('Using payment option from request:', po.name);
+            return String(po.name).trim();
+          }
         }
-      } catch (_) {}
+      } catch (e) {
+        console.error('Error resolving payment option from request:', e);
+      }
       try {
         const { Driver } = require("../models/userModels");
         const idStr = String(userId);
+        console.log('Looking for driver with ID:', idStr);
         // Driver._id is String in our schema; always try by _id first
-        let me = await Driver.findOne({ _id: idStr }).select({ paymentPreferences: 1 }).populate({ path: 'paymentPreferences', select: { name: 1 } });
+        let me = await Driver.findOne({ _id: idStr }).select({ paymentPreferences: 1, paymentPreference: 1 }).populate([
+          { path: 'paymentPreferences', select: { name: 1 } },
+          { path: 'paymentPreference', select: { name: 1 } }
+        ]);
         if (!me && (req.user?.email || req.user?.phone || req.user?.phoneNumber || req.user?.mobile)) {
+          console.log('Driver not found by ID, trying by email/phone');
           me = await Driver.findOne({
             $or: [
               { email: req.user?.email || null },
               { phone: req.user?.phone || req.user?.phoneNumber || req.user?.mobile || null }
             ]
-          }).select({ paymentPreferences: 1 }).populate({ path: 'paymentPreferences', select: { name: 1 } });
+          }).select({ paymentPreferences: 1, paymentPreference: 1 }).populate([
+            { path: 'paymentPreferences', select: { name: 1 } },
+            { path: 'paymentPreference', select: { name: 1 } }
+          ]);
         }
-        // Use first payment preference if available
-        const prefs = me && me.paymentPreferences;
-        if (prefs && Array.isArray(prefs) && prefs.length > 0) {
+        console.log('Found driver:', me ? 'yes' : 'no');
+        // Use first payment preference if available (handle both old and new formats)
+        let prefs = [];
+        if (me && me.paymentPreferences && Array.isArray(me.paymentPreferences)) {
+          prefs = me.paymentPreferences;
+        } else if (me && me.paymentPreference) {
+          prefs = [me.paymentPreference];
+        }
+        if (prefs.length > 0) {
           const firstPref = prefs[0];
           const name = firstPref && (firstPref.name || (typeof firstPref === 'string' ? firstPref : null));
-          if (name && String(name).trim().length) return String(name).trim();
+          if (name && String(name).trim().length) {
+            console.log('Using first payment preference:', name);
+            return String(name).trim();
+          }
         }
-      } catch (_) {}
+        console.log('No payment preferences found for driver');
+      } catch (e) {
+        console.error('Error resolving driver payment preferences:', e);
+      }
       const err = new Error('paymentMethod is required and no driver payment preference is set');
       err.status = 400;
       throw err;
@@ -125,6 +153,15 @@ exports.topup = async (req, res) => {
     };
 
     const methodForGateway = normalizePaymentMethod(await resolvePaymentMethod());
+    
+    // Debug logging
+    console.log('Topup request:', {
+      userId,
+      msisdn,
+      methodForGateway,
+      amount,
+      reason
+    });
 
     const notifyUrl =
       process.env.SANTIMPAY_NOTIFY_URL ||
