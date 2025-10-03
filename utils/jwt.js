@@ -45,7 +45,22 @@ function socketAuth(socket, next) {
       || decoded.id;
 
     // Resolve type/role from common claim names: type, userType, role
-    const resolvedType = (src.type || src.userType || src.role || decoded.type);
+    const resolvedTypeRaw = (src.type || src.userType || src.role || decoded.type || '');
+    // Normalize role/type variants to stable tokens
+    const normalizeRoleString = (value) => {
+      if (!value) return '';
+      let s = String(value).toLowerCase();
+      s = s.replace(/^role[_:\-\s]?/, '');
+      s = s.replace(/^scope[_:\-\s]?/, '');
+      s = s.replace(/^urn:[^:]+:/, '');
+      s = s.replace(/^[^:]+:([^:]+)$/, '$1');
+      s = s.replace(/[\s\-]+/g, '_');
+      if (s === 'drivers') s = 'driver';
+      if (s === 'passengers') s = 'passenger';
+      if (s === 'admins') s = 'admin';
+      return s;
+    };
+    const resolvedType = normalizeRoleString(resolvedTypeRaw);
 
     socket.user = {
       id: resolvedId != null ? String(resolvedId) : undefined,
