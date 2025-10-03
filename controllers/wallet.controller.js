@@ -104,19 +104,19 @@ exports.topup = async (req, res) => {
         'commercial bank of ethiopia (cbe)': 'CBE', 'commercial bank of ethiopia': 'CBE', 'commercial bank of ethiopia cbe': 'CBE',
         hellocash: 'HelloCash', 'hello-cash': 'HelloCash', 'hello cash': 'HelloCash',
         mpesa: 'MPesa', 'm-pesa': 'MPesa', 'm pesa': 'MPesa', 'm_pesa': 'MPesa',
-        'bank of abyssinia': 'CBE', abyssinia: 'CBE',
-        awash: 'CBE', 'awash bank': 'CBE',
-        dashen: 'CBE', 'dashen bank': 'CBE',
-        bunna: 'CBE', 'bunna bank': 'CBE',
-        amhara: 'CBE', 'amhara bank': 'CBE',
-        birhan: 'CBE', 'birhan bank': 'CBE',
-        berhan: 'CBE', 'berhan bank': 'CBE',
-        zamzam: 'CBE', 'zamzam bank': 'CBE',
-        yimlu: 'CBE',
+        'bank of abyssinia': 'Abyssinia', abyssinia: 'Abyssinia',
+        awash: 'Awash', 'awash bank': 'Awash',
+        dashen: 'Dashen', 'dashen bank': 'Dashen',
+        bunna: 'Bunna', 'bunna bank': 'Bunna',
+        amhara: 'Amhara', 'amhara bank': 'Amhara',
+        birhan: 'Birhan', 'birhan bank': 'Birhan',
+        berhan: 'Berhan', 'berhan bank': 'Berhan',
+        zamzam: 'ZamZam', 'zamzam bank': 'ZamZam',
+        yimlu: 'Yimlu',
       };
       if (table[m]) return table[m];
       // Map any residual bank keyword to CBE rails as a fallback
-      const bankKeywords = ['bank of abyssinia', 'abyssinia', 'awash', 'dashen', 'bunna', 'amhara', 'birhan', 'berhan', 'zamzam', 'yimlu', 'bank'];
+      const bankKeywords = ['bank'];
       if (bankKeywords.some(k => m.includes(k))) return 'CBE';
       return raw; // pass-through for other configured options
     };
