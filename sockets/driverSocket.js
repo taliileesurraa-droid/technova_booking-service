@@ -91,11 +91,6 @@ try {
         updatedAt: x.booking.updatedAt
       }));
 
-    // Mark initial snapshot items as dispatched (no logs) to avoid duplicate booking:new per driver
-    try {
-      const driverId = String(me._id);
-      nearby.forEach(b => { if (!wasDispatched(b.id, driverId)) markDispatched(b.id, driverId); });
-    } catch (_) {}
   }
 } catch (_) {}
 
