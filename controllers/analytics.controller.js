@@ -366,14 +366,14 @@ exports.getRideHistory = async (req, res) => {
       .lean();
 
     // enrich driver basic info via external service using externalId when present
-  const { getDriversByIds } = require('../integrations/userServiceClient');
-  const driverExternalIds = [...new Set(rides.map(r => r.driverId).filter(Boolean))].map(String);
+  // Enrich driver details from local DB when possible
+  const driverIds = [...new Set(rides.map(r => r.driverId).filter(Boolean))].map(String);
+  const validDriverIds = driverIds.filter(id => require('mongoose').Types.ObjectId.isValid(id));
   let driverInfoMap = {};
-  if (driverExternalIds.length) {
+  if (validDriverIds.length) {
     try {
-      const headers = req.headers && req.headers.authorization ? { Authorization: req.headers.authorization } : undefined;
-      const infos = await getDriversByIds(driverExternalIds, headers);
-      driverInfoMap = Object.fromEntries(infos.map(i => [String(i.id), { id: String(i.id), name: i.name, phone: i.phone, email: i.email }]));
+      const drivers = await Driver.find({ _id: { $in: validDriverIds } }).select({ _id: 1, name: 1, phone: 1, email: 1 }).lean();
+      driverInfoMap = Object.fromEntries(drivers.map(d => [String(d._id), { id: String(d._id), name: d.name, phone: d.phone, email: d.email }]));
     } catch (_) {}
   }
 
