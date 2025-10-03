@@ -109,12 +109,14 @@ module.exports = (io, socket) => {
             dropoff: booking.dropoff,
             passenger: { id: passengerId, name: socket.user.name, phone: socket.user.phone }
           };
-          const payloadForDriver = { id: String(booking._id), bookingId: String(booking._id), booking: bookingDetails, patch, user: { id: passengerId, type: 'passenger' } };
+          const payloadForDriver = { id: String(booking._id), bookingId: String(booking._id), booking: bookingDetails, patch, user: { id: passengerId, type: 'passenger' }, recipient: { type: 'driver' } };
           // Also prepare a broadcast payload for the shared 'drivers' room as a fallback delivery channel
           const payloadForDriversRoom = { id: String(booking._id), bookingId: String(booking._id), booking: bookingDetails, patch };
           let sentCount = 0;
           for (const drv of targetDrivers) {
             const driverId = String(drv._id);
+            // Attach driver id/type on a per-recipient basis
+            payloadForDriver.recipient = { id: driverId, type: 'driver' };
             const channel = `driver:${driverId}`;
             if (!wasDispatched(String(booking._id), driverId)) {
               sendMessageToSocketId(channel, { event: 'booking:new', data: payloadForDriver });
