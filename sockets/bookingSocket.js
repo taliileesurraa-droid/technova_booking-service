@@ -118,8 +118,8 @@ module.exports = (io, socket) => {
             const channel = `driver:${driverId}`;
             if (!wasDispatched(String(booking._id), driverId)) {
               sendMessageToSocketId(channel, { event: 'booking:new', data: payloadForDriver });
-              // Also emit incremental nearby update so clients listening on booking:nearby receive new bookings after connect
-              try { io.to(channel).emit('booking:nearby', { init: false, driverId, bookings: [bookingDetails], patch }); } catch (_) {}
+              // Also emit incremental nearby update with the same schema as initial snapshot
+              try { io.to(channel).emit('booking:nearby', { init: false, driverId, bookings: [bookingDetails], currentBookings: [], user: { id: driverId, type: 'driver' } }); } catch (_) {}
               markDispatched(String(booking._id), driverId);
               sentCount++;
             }
