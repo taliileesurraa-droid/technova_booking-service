@@ -121,6 +121,84 @@ try {
       const updated = await driverService.setAvailability(String(socket.user.id), available, socket.user);
       driverEvents.emitDriverAvailability(String(socket.user.id), !!available);
       try { logger.info('[socket->driver] availability updated', { userId: socket.user && socket.user.id, available }); } catch (_) {}
+
+      // If driver just became available, proactively push nearby open bookings
+      if (available === true) {
+        try {
+          const { Booking } = require('../models/bookingModels');
+          const { Driver } = require('../models/userModels');
+          const { Wallet } = require('../models/common');
+          const financeService = require('../services/financeService');
+          const geolib = require('geolib');
+
+          const driverId = String(socket.user.id);
+          const me = await Driver.findById(driverId).lean();
+          const radiusKm = parseFloat(process.env.BROADCAST_RADIUS_KM || process.env.RADIUS_KM || '5');
+
+          if (me && me.lastKnownLocation && Number.isFinite(me.lastKnownLocation.latitude) && Number.isFinite(me.lastKnownLocation.longitude)) {
+            const open = await Booking.find({ status: 'requested', $or: [{ driverId: { $exists: false } }, { driverId: null }, { driverId: '' }] })
+              .sort({ createdAt: -1 })
+              .limit(200)
+              .lean();
+
+            const withDistance = open.map(b => ({
+              booking: b,
+              distanceKm: geolib.getDistance(
+                { latitude: me.lastKnownLocation.latitude, longitude: me.lastKnownLocation.longitude },
+                { latitude: b.pickup?.latitude, longitude: b.pickup?.longitude }
+              ) / 1000
+            }))
+            .filter(x => Number.isFinite(x.distanceKm) && x.distanceKm <= radiusKm)
+            .sort((a, b) => a.distanceKm - b.distanceKm);
+
+            const w = await Wallet.findOne({ userId: driverId, role: 'driver' }).lean();
+            const balance = w ? Number(w.balance || 0) : 0;
+            const nearby = withDistance
+              .filter(x => financeService.canAcceptBooking(balance, x.booking.fareFinal || x.booking.fareEstimated || 0))
+              .slice(0, 50)
+              .map(x => ({
+                id: String(x.booking._id),
+                status: x.booking.status,
+                pickup: x.booking.pickup,
+                dropoff: x.booking.dropoff,
+                fareEstimated: x.booking.fareEstimated,
+                fareFinal: x.booking.fareFinal,
+                distanceKm: Math.round(x.distanceKm * 100) / 100,
+                passenger: x.booking.passengerId ? { id: String(x.booking.passengerId), name: x.booking.passengerName, phone: x.booking.passengerPhone } : undefined,
+                createdAt: x.booking.createdAt,
+                updatedAt: x.booking.updatedAt
+              }));
+
+            // Emit incremental nearby snapshot
+            const payloadNearby = {
+              init: false,
+              driverId,
+              bookings: nearby,
+              currentBookings: [],
+              user: { id: driverId, type: 'driver' }
+            };
+            try { logger.info('[socket->driver] emit booking:nearby (availability=true)', { sid: socket.id, userId: driverId, nearbyCount: payloadNearby.bookings.length }); } catch (_) {}
+            socket.emit('booking:nearby', payloadNearby);
+
+            // Also emit booking:new per item for clients relying on this channel
+            const channel = `driver:${driverId}`;
+            for (const n of nearby) {
+              try {
+                const patch = {
+                  status: n.status,
+                  passengerId: n.passenger?.id,
+                  vehicleType: undefined,
+                  pickup: n.pickup,
+                  dropoff: n.dropoff,
+                  passenger: n.passenger
+                };
+                const payloadForDriver = { id: n.id, bookingId: n.id, booking: { ...n }, patch, user: { id: n.passenger?.id, type: 'passenger' }, recipient: { id: driverId, type: 'driver' } };
+                io.to(channel).emit('booking:new', payloadForDriver);
+              } catch (_) {}
+            }
+          }
+        } catch (_) {}
+      }
     } catch (err) {
       socket.emit('booking_error', { message: 'Failed to update availability', source: 'driver:availability' });
     }
