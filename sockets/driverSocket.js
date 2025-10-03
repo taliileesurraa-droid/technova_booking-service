@@ -2,7 +2,7 @@ const driverService = require('../services/driverService');
 const driverEvents = require('../events/driverEvents');
 const { calculateLivePricing } = require('../services/bookingPricingService');
 const logger = require('../utils/logger');
-const { markDispatched, wasDispatched, registerSocket, unregisterSocket, setSocketAvailability } = require('./dispatchRegistry');
+const { markDispatched, wasDispatched, registerSocket, unregisterSocket, setSocketAvailability, setLiveLocation } = require('./dispatchRegistry');
 
 module.exports = (io, socket) => {
   // On connection, send initial nearby unassigned bookings (pre-existing) and current driver bookings
@@ -267,6 +267,8 @@ try {
         return socket.emit('booking_error', { message: 'latitude and longitude must be numbers', source: 'booking:driver_location_update' });
       }
       const d = await driverService.updateLocation(String(socket.user.id), data, socket.user);
+      // Update live location cache for immediate targeting decisions
+      try { setLiveLocation(String(socket.user.id), data); } catch (_) {}
       driverEvents.emitDriverLocationUpdate({
         driverId: String(d._id),
         vehicleType: d.vehicleType,

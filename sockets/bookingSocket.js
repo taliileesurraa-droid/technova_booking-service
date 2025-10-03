@@ -59,15 +59,19 @@ module.exports = (io, socket) => {
         // Do not rely on DB availability; socket-level availability filter is applied later
         const drivers = await Driver.find(booking.vehicleType ? { vehicleType: booking.vehicleType } : {}).lean();
 
-        const withDistance = drivers.map(d => ({
-          driver: d,
-          distanceKm: d.lastKnownLocation && d.lastKnownLocation.latitude != null && d.lastKnownLocation.longitude != null
-            ? (geolib.getDistance(
-                { latitude: d.lastKnownLocation.latitude, longitude: d.lastKnownLocation.longitude },
-                { latitude: booking.pickup.latitude, longitude: booking.pickup.longitude }
-              ) / 1000)
-            : Number.POSITIVE_INFINITY
-        }))
+        const { getLiveLocation } = require('./dispatchRegistry');
+        const withDistance = drivers.map(d => {
+          const live = getLiveLocation(String(d._id));
+          const base = live && live.latitude != null && live.longitude != null
+            ? { latitude: live.latitude, longitude: live.longitude }
+            : (d.lastKnownLocation && d.lastKnownLocation.latitude != null && d.lastKnownLocation.longitude != null
+              ? { latitude: d.lastKnownLocation.latitude, longitude: d.lastKnownLocation.longitude }
+              : null);
+          const distKm = base
+            ? (geolib.getDistance(base, { latitude: booking.pickup.latitude, longitude: booking.pickup.longitude }) / 1000)
+            : Number.POSITIVE_INFINITY;
+          return { driver: d, distanceKm: distKm };
+        })
         .filter(x => Number.isFinite(x.distanceKm) && x.distanceKm <= radiusKm)
         .sort((a, b) => a.distanceKm - b.distanceKm);
 

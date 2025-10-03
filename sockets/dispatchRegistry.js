@@ -8,6 +8,8 @@ const DISPATCH_TTL_MS = Number.parseInt(process.env.DISPATCH_TTL_MS || `${DEFAUL
 // Runtime registry for connected drivers and their socket-level availability
 // Structure: driverId -> { socketIds: Set<string>, availableSockets: Set<string> }
 const driverConnectionRegistry = new Map();
+// Live location cache: driverId -> { latitude, longitude, bearing, updatedAt }
+const liveLocationByDriver = new Map();
 function ensureDriverEntry(driverId) {
   const id = String(driverId);
   if (!driverConnectionRegistry.has(id)) {
@@ -37,6 +39,20 @@ function setSocketAvailability(driverId, socketId, available) {
 function isDriverAvailableBySocket(driverId) {
   const entry = driverConnectionRegistry.get(String(driverId));
   return !!(entry && entry.availableSockets && entry.availableSockets.size > 0);
+}
+
+function setLiveLocation(driverId, location) {
+  if (!location || location.latitude == null || location.longitude == null) return;
+  liveLocationByDriver.set(String(driverId), {
+    latitude: Number(location.latitude),
+    longitude: Number(location.longitude),
+    bearing: location.bearing != null ? Number(location.bearing) : undefined,
+    updatedAt: Date.now()
+  });
+}
+
+function getLiveLocation(driverId) {
+  return liveLocationByDriver.get(String(driverId));
 }
 
 function makeKey(bookingId, driverId) {
@@ -76,6 +92,8 @@ module.exports = {
   registerSocket,
   unregisterSocket,
   setSocketAvailability,
-  isDriverAvailableBySocket
+  isDriverAvailableBySocket,
+  setLiveLocation,
+  getLiveLocation
 };
 
