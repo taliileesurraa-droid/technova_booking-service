@@ -65,9 +65,25 @@ exports.topup = async (req, res) => {
       if (explicit) return explicit;
       try {
         const { Driver } = require("../models/userModels");
-        const me = await Driver.findById(String(userId)).select({ paymentPreference: 1 }).populate({ path: 'paymentPreference', select: { name: 1 } });
-        const name = me && me.paymentPreference && me.paymentPreference.name ? String(me.paymentPreference.name).trim() : null;
-        if (name) return name;
+        const { Types } = require('mongoose');
+        const idStr = String(userId);
+        let me = null;
+        if (Types.ObjectId.isValid(idStr)) {
+          me = await Driver.findById(idStr).select({ paymentPreference: 1 }).populate({ path: 'paymentPreference', select: { name: 1 } });
+        }
+        if (!me) {
+          me = await Driver.findOne({
+            $or: [
+              { externalId: idStr },
+              { email: req.user?.email || null },
+              { phone: req.user?.phone || req.user?.phoneNumber || req.user?.mobile || null }
+            ]
+          }).select({ paymentPreference: 1 });
+        }
+        // Support both populated ref and embedded object shape
+        const pref = me && me.paymentPreference;
+        const name = pref && (pref.name || (typeof pref === 'string' ? pref : null));
+        if (name && String(name).trim().length) return String(name).trim();
       } catch (_) {}
       const err = new Error('paymentMethod is required and no driver payment preference is set');
       err.status = 400;
