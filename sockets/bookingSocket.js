@@ -56,7 +56,8 @@ module.exports = (io, socket) => {
         const financeService = require('../services/financeService');
 
         const radiusKm = parseFloat(process.env.BROADCAST_RADIUS_KM || process.env.RADIUS_KM || '5');
-        const drivers = await Driver.find({ available: true, ...(booking.vehicleType ? { vehicleType: booking.vehicleType } : {}) }).lean();
+        // Do not rely on DB availability; socket-level availability filter is applied later
+        const drivers = await Driver.find(booking.vehicleType ? { vehicleType: booking.vehicleType } : {}).lean();
 
         const withDistance = drivers.map(d => ({
           driver: d,
