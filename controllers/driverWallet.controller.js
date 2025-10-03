@@ -116,7 +116,23 @@ exports.adminListWallets = async (req, res) => {
       Wallet.find(filter).sort({ updatedAt: -1 }).skip(skip).limit(pageSize).lean(),
       Wallet.countDocuments(filter),
     ]);
-    return res.json({ items, page, pageSize, total });
+
+    // Enrich with driver user info (name, phone) from local DB when available
+    let enriched = items;
+    try {
+      const { Driver } = require('../models/userModels');
+      const { Types } = require('mongoose');
+      const driverIds = [...new Set(items.map(w => String(w.userId)).filter(Boolean))];
+      const validIds = driverIds.filter(id => Types.ObjectId.isValid(id));
+      const drivers = validIds.length ? await Driver.find({ _id: { $in: validIds } }).select({ _id: 1, name: 1, phone: 1, email: 1 }).lean() : [];
+      const dmap = Object.fromEntries(drivers.map(d => [String(d._id), { id: String(d._id), name: d.name, phone: d.phone, email: d.email }]));
+      enriched = items.map(w => ({
+        ...w,
+        user: dmap[String(w.userId)] || { id: String(w.userId) }
+      }));
+    } catch (_) {}
+
+    return res.json({ items: enriched, page, pageSize, total });
   } catch (e) { return res.status(500).json({ message: e.message }); }
 };
 
@@ -129,6 +145,16 @@ exports.adminGetDriverWallet = async (req, res) => {
       Wallet.findOne({ userId: driverId, role: 'driver' }).lean(),
       Transaction.find({ userId: driverId, role: 'driver' }).sort({ createdAt: -1 }).limit(limit).lean(),
     ]);
-    return res.json({ wallet: wallet || { userId: driverId, role: 'driver', balance: 0, totalEarnings: 0, currency: 'ETB' }, transactions: txs });
+    // Attach driver user info if present
+    let user;
+    try {
+      const { Driver } = require('../models/userModels');
+      const { Types } = require('mongoose');
+      if (require('mongoose').Types.ObjectId.isValid(driverId)) {
+        const d = await Driver.findById(driverId).select({ _id: 1, name: 1, phone: 1, email: 1 }).lean();
+        if (d) user = { id: String(d._id), name: d.name, phone: d.phone, email: d.email };
+      }
+    } catch (_) {}
+    return res.json({ wallet: wallet || { userId: driverId, role: 'driver', balance: 0, totalEarnings: 0, currency: 'ETB' }, user: user || { id: driverId }, transactions: txs });
   } catch (e) { return res.status(500).json({ message: e.message }); }
 };
