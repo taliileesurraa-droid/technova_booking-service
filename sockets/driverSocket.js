@@ -149,11 +149,22 @@ try {
       const data = typeof payload === 'string' ? JSON.parse(payload) : (payload || {});
       const available = typeof data.available === 'boolean' ? data.available : undefined;
       if (available == null) return socket.emit('booking_error', { message: 'available boolean is required', source: 'driver:availability' });
-      const updated = await driverService.setAvailability(String(socket.user.id), available, socket.user);
-      // Update runtime availability per socket (do not trust token)
-      try { setSocketAvailability(String(socket.user.id), socket.id, !!available); } catch (_) {}
-      driverEvents.emitDriverAvailability(String(socket.user.id), !!available);
-      try { logger.info('[socket->driver] availability updated', { userId: socket.user && socket.user.id, available }); } catch (_) {}
+      const tokenDriverId = String(socket.user.id);
+      const { Driver } = require('../models/userModels');
+      const { Types } = require('mongoose');
+      let meResolved = null;
+      try {
+        if (Types.ObjectId.isValid(tokenDriverId)) meResolved = await Driver.findById(tokenDriverId).select({ _id: 1 }).lean();
+        if (!meResolved && socket.user.email) meResolved = await Driver.findOne({ email: socket.user.email }).select({ _id: 1 }).lean();
+        if (!meResolved && socket.user.phone) meResolved = await Driver.findOne({ phone: socket.user.phone }).select({ _id: 1 }).lean();
+      } catch (_) {}
+      const driverDbId = String(meResolved?._id || tokenDriverId);
+      const updated = await driverService.setAvailability(driverDbId, available, socket.user);
+      // Update runtime availability per socket under both ids (token and DB)
+      try { setSocketAvailability(driverDbId, socket.id, !!available); } catch (_) {}
+      try { if (driverDbId !== tokenDriverId) setSocketAvailability(tokenDriverId, socket.id, !!available); } catch (_) {}
+      driverEvents.emitDriverAvailability(driverDbId, !!available);
+      try { logger.info('[socket->driver] availability updated', { userId: driverDbId, available }); } catch (_) {}
 
       // If driver just became available, proactively push nearby open bookings
       if (available === true) {
@@ -266,9 +277,20 @@ try {
       if (!Number.isFinite(data.latitude) || !Number.isFinite(data.longitude)) {
         return socket.emit('booking_error', { message: 'latitude and longitude must be numbers', source: 'booking:driver_location_update' });
       }
-      const d = await driverService.updateLocation(String(socket.user.id), data, socket.user);
-      // Update live location cache for immediate targeting decisions
-      try { setLiveLocation(String(socket.user.id), data); } catch (_) {}
+      const tokenDriverId = String(socket.user.id);
+      const { Driver } = require('../models/userModels');
+      const { Types } = require('mongoose');
+      let meResolved = null;
+      try {
+        if (Types.ObjectId.isValid(tokenDriverId)) meResolved = await Driver.findById(tokenDriverId).select({ _id: 1 }).lean();
+        if (!meResolved && socket.user.email) meResolved = await Driver.findOne({ email: socket.user.email }).select({ _id: 1 }).lean();
+        if (!meResolved && socket.user.phone) meResolved = await Driver.findOne({ phone: socket.user.phone }).select({ _id: 1 }).lean();
+      } catch (_) {}
+      const driverDbId = String(meResolved?._id || tokenDriverId);
+      const d = await driverService.updateLocation(driverDbId, data, socket.user);
+      // Update live location cache for immediate targeting decisions under both ids
+      try { setLiveLocation(driverDbId, data); } catch (_) {}
+      try { if (driverDbId !== tokenDriverId) setLiveLocation(tokenDriverId, data); } catch (_) {}
       driverEvents.emitDriverLocationUpdate({
         driverId: String(d._id),
         vehicleType: d.vehicleType,
