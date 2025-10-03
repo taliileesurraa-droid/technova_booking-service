@@ -127,6 +127,7 @@ try {
       fareEstimated: x.booking.fareEstimated,
       fareFinal: x.booking.fareFinal,
       distanceKm: Math.round(x.distanceKm * 100) / 100,
+      // Keep passenger format as original: { id, name, phone }
       passenger: x.booking.passengerId ? (passengerMap[String(x.booking.passengerId)] || { id: String(x.booking.passengerId), name: x.booking.passengerName, phone: x.booking.passengerPhone }) : undefined,
       createdAt: x.booking.createdAt,
       updatedAt: x.booking.updatedAt

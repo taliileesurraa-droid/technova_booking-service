@@ -107,12 +107,12 @@ module.exports = (io, socket) => {
         } catch (_) {}
 
         if (targetDrivers && targetDrivers.length) {
-          // Enrich passenger details for driver payload
-          let passengerForDriver = { id: passengerId, name: socket.user.name, phone: socket.user.phone, email: socket.user.email };
+          // Keep passenger format as original: { id, name, phone }
+          let passengerForDriver = { id: passengerId, name: socket.user.name, phone: socket.user.phone };
           try {
             const { Passenger } = require('../models/userModels');
-            const pdoc = await Passenger.findById(passengerId).select({ _id: 1, name: 1, phone: 1, email: 1, emergencyContacts: 1 }).lean();
-            if (pdoc) passengerForDriver = { id: String(pdoc._id), name: pdoc.name, phone: pdoc.phone, email: pdoc.email, emergencyContacts: pdoc.emergencyContacts };
+            const pdoc = await Passenger.findById(passengerId).select({ _id: 1, name: 1, phone: 1 }).lean();
+            if (pdoc) passengerForDriver = { id: String(pdoc._id), name: pdoc.name, phone: pdoc.phone };
           } catch (_) {}
 
           const bookingDetails = {
@@ -137,14 +137,13 @@ module.exports = (io, socket) => {
             dropoff: booking.dropoff,
             passenger: passengerForDriver
           };
-          const payloadForDriver = { id: String(booking._id), bookingId: String(booking._id), booking: bookingDetails, patch, user: { id: passengerId, type: 'passenger' }, recipient: { type: 'driver' } };
+          const payloadForDriver = { id: String(booking._id), bookingId: String(booking._id), booking: bookingDetails, patch, user: { id: passengerId, type: 'passenger' } };
           // Also prepare a broadcast payload for the shared 'drivers' room as a fallback delivery channel
           const payloadForDriversRoom = { id: String(booking._id), bookingId: String(booking._id), booking: bookingDetails, patch };
           let sentCount = 0;
           for (const drv of targetDrivers) {
             const driverId = String(drv._id);
-            // Attach driver id/type on a per-recipient basis
-            payloadForDriver.recipient = { id: driverId, type: 'driver' };
+            // Do not attach extra fields; keep original format
             const channel = `driver:${driverId}`;
             if (!wasDispatched(String(booking._id), driverId)) {
               sendMessageToSocketId(channel, { event: 'booking:new', data: payloadForDriver });
