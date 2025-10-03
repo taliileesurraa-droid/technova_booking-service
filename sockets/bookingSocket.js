@@ -184,10 +184,19 @@ module.exports = (io, socket) => {
       bookingEvents.emitBookingUpdate(String(updated._id), { status: 'accepted', driverId: String(socket.user.id), acceptedAt: updated.acceptedAt });
       try { logger.info('[socket->room] booking:update accepted', { bookingId: String(updated._id), driverId: String(socket.user.id) }); } catch (_) {}
 
-      // Emit explicit booking_accept with enriched driver details to booking room
+      // Emit explicit booking_accept with enriched driver and booking details to booking room
       try {
         const { Driver } = require('../models/userModels');
+        const { Passenger } = require('../models/userModels');
         const d = await Driver.findById(String(socket.user.id)).lean();
+        const bfull = await Booking.findById(String(updated._id)).lean();
+        let passengerForDriver = undefined;
+        try {
+          if (bfull && bfull.passengerId) {
+            const p = await Passenger.findById(String(bfull.passengerId)).select({ _id: 1, name: 1, phone: 1 }).lean();
+            if (p) passengerForDriver = { id: String(p._id), name: p.name, phone: p.phone };
+          }
+        } catch (_) {}
         const tokenCarName = socket.user && (socket.user.carName || socket.user.carModel || socket.user.vehicleName || socket.user.carname);
         const tokenCarPlate = socket.user && (socket.user.carPlate || socket.user.car_plate || socket.user.carPlateNumber || socket.user.plate || socket.user.plateNumber);
         const tokenCarColor = socket.user && (socket.user.carColor || socket.user.color);
@@ -207,12 +216,27 @@ module.exports = (io, socket) => {
           carPlate: carPlateOut,
           rating: (d && (d.rating || d.rating === 0 ? d.rating : undefined)) ?? 5.0
         };
+        const bookingDetails = bfull ? {
+          id: String(bfull._id),
+          status: bfull.status,
+          passengerId: bfull.passengerId ? String(bfull.passengerId) : undefined,
+          passenger: passengerForDriver || (bfull.passengerId ? { id: String(bfull.passengerId), name: bfull.passengerName, phone: bfull.passengerPhone } : undefined),
+          vehicleType: bfull.vehicleType,
+          pickup: bfull.pickup,
+          dropoff: bfull.dropoff,
+          fareEstimated: bfull.fareEstimated,
+          fareFinal: bfull.fareFinal,
+          distanceKm: bfull.distanceKm,
+          createdAt: bfull.createdAt,
+          updatedAt: bfull.updatedAt
+        } : undefined;
         const acceptPayload = {
           id: String(updated._id),
           bookingId: String(updated._id),
           status: 'accepted',
           driverId: String(socket.user.id),
           driver: driverPayload,
+          booking: bookingDetails,
           user: { id: String(socket.user.id), type: 'driver' }
         };
         try { logger.info('[socket->room] booking_accept', { room, bookingId: acceptPayload.bookingId, driverId: driverPayload.id }); } catch (_) {}
