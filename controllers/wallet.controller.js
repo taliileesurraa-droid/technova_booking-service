@@ -94,13 +94,21 @@ exports.topup = async (req, res) => {
       err.status = 400;
       throw err;
     }
-    // Normalize for SantimPay API accepted values
+    // Normalize for SantimPay API accepted values (broadened names/aliases)
     const normalizePaymentMethod = (method) => {
-      const m = String(method || "").trim().toLowerCase();
-      if (m === "telebirr" || m === "tele") return "Telebirr";
-      if (m === "cbe" || m === "cbe-birr" || m === "cbebirr") return "CBE";
-      if (m === "hellocash" || m === "hello-cash") return "HelloCash";
-      return method; // pass-through for other configured options
+      const raw = String(method || "").trim();
+      const m = raw.toLowerCase();
+      const table = {
+        telebirr: 'Telebirr', tele: 'Telebirr', 'tele-birr': 'Telebirr',
+        cbe: 'CBE', 'cbe-birr': 'CBE', cbebirr: 'CBE', 'commercial bank of ethiopia (cbe)': 'CBE', 'commercial bank of ethiopia': 'CBE',
+        hellocash: 'HelloCash', 'hello-cash': 'HelloCash',
+        mpesa: 'MPesa', 'm-pesa': 'MPesa', 'm pesa': 'MPesa',
+      };
+      if (table[m]) return table[m];
+      // Map common bank names to CBE rails as a fallback
+      const bankKeywords = ['bank of abyssinia', 'abyssinia', 'awash', 'dashen', 'bunna', 'amhara', 'birhan', 'berhan', 'zamzam', 'yimlu'];
+      if (bankKeywords.some(k => m.includes(k))) return 'CBE';
+      return raw; // pass-through for other configured options
     };
 
     const methodForGateway = normalizePaymentMethod(await resolvePaymentMethod());
@@ -401,13 +409,7 @@ exports.withdraw = async (req, res) => {
         err.status = 400;
         throw err;
       }
-      const normalizePaymentMethod2 = (method) => {
-        const m = String(method || "").trim().toLowerCase();
-        if (m === "telebirr" || m === "tele") return "Telebirr";
-        if (m === "cbe" || m === "cbe-birr" || m === "cbebirr") return "CBE";
-        if (m === "hellocash" || m === "hello-cash") return "HelloCash";
-        return method;
-      };
+      const normalizePaymentMethod2 = (method) => normalizePaymentMethod(method);
       const pm = normalizePaymentMethod2(await resolvePaymentMethodWithdraw());
       const gw = await santim.payoutTransfer({
         id: tx._id.toString(),
