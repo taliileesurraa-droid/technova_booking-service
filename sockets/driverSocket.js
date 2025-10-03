@@ -10,10 +10,31 @@ module.exports = (io, socket) => {
     if (socket.user && String(socket.user.type).toLowerCase() === 'driver') {
       // Join driver-specific room so targeted events like booking:new and booking:removed are received
       try {
-        const driverRoom = `driver:${String(socket.user.id)}`;
-        socket.join(driverRoom);
-        // Also join a shared drivers room for optional broadcasts/fallbacks
-        try { socket.join('drivers'); } catch (_) {}
+        (async () => {
+          const tokenDriverId = String(socket.user.id);
+          const { Driver } = require('../models/userModels');
+          const { Types } = require('mongoose');
+          let meForRoom = null;
+          try {
+            if (Types.ObjectId.isValid(tokenDriverId)) {
+              meForRoom = await Driver.findById(tokenDriverId).select({ _id: 1, available: 1, lastKnownLocation: 1, vehicleType: 1 }).lean();
+            }
+            if (!meForRoom && socket.user.email) {
+              meForRoom = await Driver.findOne({ email: socket.user.email }).select({ _id: 1, available: 1, lastKnownLocation: 1, vehicleType: 1 }).lean();
+            }
+            if (!meForRoom && socket.user.phone) {
+              meForRoom = await Driver.findOne({ phone: socket.user.phone }).select({ _id: 1, available: 1, lastKnownLocation: 1, vehicleType: 1 }).lean();
+            }
+          } catch (_) {}
+
+          const driverDbId = String(meForRoom?._id || tokenDriverId);
+
+          // Join both token-based and DB-based ids to handle environments where token id != DB _id
+          try { socket.join(`driver:${tokenDriverId}`); } catch (_) {}
+          try { socket.join(`driver:${driverDbId}`); } catch (_) {}
+          // Also join a shared drivers room for optional broadcasts/fallbacks
+          try { socket.join('drivers'); } catch (_) {}
+        })();
       } catch (_) {}
       (async () => {
         try {
@@ -23,8 +44,15 @@ module.exports = (io, socket) => {
           const financeService = require('../services/financeService');
           const geolib = require('geolib');
 
-          const driverId = String(socket.user.id);
-          const me = await Driver.findById(driverId).lean();
+          const tokenDriverId = String(socket.user.id);
+          const { Types } = require('mongoose');
+          let me = null;
+          if (Types.ObjectId.isValid(tokenDriverId)) {
+            me = await Driver.findById(tokenDriverId).lean();
+          }
+          if (!me && socket.user.email) me = await Driver.findOne({ email: socket.user.email }).lean();
+          if (!me && socket.user.phone) me = await Driver.findOne({ phone: socket.user.phone }).lean();
+          const driverId = String(me?._id || tokenDriverId);
           const radiusKm = parseFloat(process.env.BROADCAST_RADIUS_KM || process.env.RADIUS_KM || '5');
 
           // Current bookings assigned to this driver
@@ -131,8 +159,13 @@ try {
           const financeService = require('../services/financeService');
           const geolib = require('geolib');
 
-          const driverId = String(socket.user.id);
-          const me = await Driver.findById(driverId).lean();
+          const tokenDriverId = String(socket.user.id);
+          const { Types } = require('mongoose');
+          let me = null;
+          if (Types.ObjectId.isValid(tokenDriverId)) me = await Driver.findById(tokenDriverId).lean();
+          if (!me && socket.user.email) me = await Driver.findOne({ email: socket.user.email }).lean();
+          if (!me && socket.user.phone) me = await Driver.findOne({ phone: socket.user.phone }).lean();
+          const driverId = String(me?._id || tokenDriverId);
           const radiusKm = parseFloat(process.env.BROADCAST_RADIUS_KM || process.env.RADIUS_KM || '5');
 
           if (me && me.lastKnownLocation && Number.isFinite(me.lastKnownLocation.latitude) && Number.isFinite(me.lastKnownLocation.longitude)) {
