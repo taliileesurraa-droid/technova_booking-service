@@ -234,13 +234,31 @@ module.exports = {
       const rows = await paymentService.getPaymentOptions();
       let selectedIds = [];
       try {
+        // Determine which driver to check preferences for
+        let targetDriverId = null;
+        
         if (req.user && req.user.type === 'driver') {
+          targetDriverId = String(req.user.id);
+        } else if (req.user && (req.user.type === 'admin' || req.user.roles?.includes('superadmin'))) {
+          // For admin requests, check if driverId is provided in query params
+          targetDriverId = req.query.driverId || req.body.driverId;
+        }
+        
+        console.log('Payment options request:', {
+          userType: req.user?.type,
+          userId: req.user?.id,
+          targetDriverId,
+          queryDriverId: req.query.driverId,
+          bodyDriverId: req.body.driverId
+        });
+        
+        if (targetDriverId) {
           // Try multiple ways to find the driver
-          let me = await Driver.findById(String(req.user.id)).select({ paymentPreferences: 1, paymentPreference: 1 }).lean();
+          let me = await Driver.findById(String(targetDriverId)).select({ paymentPreferences: 1, paymentPreference: 1 }).lean();
           
           // Fallback: try by externalId
           if (!me) {
-            me = await Driver.findOne({ externalId: String(req.user.id) }).select({ paymentPreferences: 1, paymentPreference: 1 }).lean();
+            me = await Driver.findOne({ externalId: String(targetDriverId) }).select({ paymentPreferences: 1, paymentPreference: 1 }).lean();
           }
           
           // Fallback: try by email or phone
@@ -253,6 +271,8 @@ module.exports = {
             }).select({ paymentPreferences: 1, paymentPreference: 1 }).lean();
           }
           
+          console.log('Found driver:', me ? 'yes' : 'no', me ? { id: me._id, preferences: me.paymentPreferences, oldPreference: me.paymentPreference } : null);
+          
           // Handle both old paymentPreference and new paymentPreferences
           let preferences = [];
           if (me && me.paymentPreferences) {
@@ -261,16 +281,23 @@ module.exports = {
             preferences = [me.paymentPreference];
           }
           selectedIds = preferences.map(id => String(id));
+          console.log('Selected payment option IDs:', selectedIds);
         }
       } catch (e) {
         console.error('Error fetching driver payment preferences:', e);
       }
-      const data = (rows || []).map(o => ({ 
-        id: String(o._id || o.id), 
-        name: o.name, 
-        logo: o.logo, 
-        selected: selectedIds.includes(String(o._id || o.id))
-      }));
+      const data = (rows || []).map(o => {
+        const optionId = String(o._id || o.id);
+        const isSelected = selectedIds.includes(optionId);
+        console.log(`Checking option ${optionId} (${o.name}): selected=${isSelected}, selectedIds=[${selectedIds.join(', ')}]`);
+        return { 
+          id: optionId, 
+          name: o.name, 
+          logo: o.logo, 
+          selected: isSelected
+        };
+      });
+      console.log('Payment options response:', data.map(d => ({ id: d.id, name: d.name, selected: d.selected })));
       return res.json(data);
     } catch (e) { errorHandler(res, e); }
   },

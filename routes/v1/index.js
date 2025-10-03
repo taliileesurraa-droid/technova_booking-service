@@ -40,6 +40,16 @@ router.get('/payment-options', async (req, res) => {
     return res.status(500).json({ message: e.message });
   }
 });
+// Payment options for specific driver
+router.get('/payment-options/:driverId', async (req, res) => {
+  try {
+    req.query.driverId = req.params.driverId;
+    const ctrl = require('../../controllers/driver.controller');
+    return await ctrl.listPaymentOptions(req, res);
+  } catch (e) {
+    return res.status(500).json({ message: e.message });
+  }
+});
 router.post('/payment-options', authorize('admin','superadmin'), async (req, res) => {
   try {
     const { create } = require('../../controllers/paymentOption.controller');
