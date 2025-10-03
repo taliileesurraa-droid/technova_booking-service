@@ -135,6 +135,28 @@ async function completeTrip(bookingId, endLocation, options = {}) {
   // Wallet operations (best effort)
   try {
     if (booking.driverId) await walletService.credit(booking.driverId, driverEarnings, 'Trip earnings');
+    // Deduct commission from driver package balance (driver wallet) upon trip completion
+    try {
+      if (booking.driverId && Number.isFinite(commission) && commission > 0) {
+        const { Wallet, Transaction } = require('../models/common');
+        await Wallet.updateOne(
+          { userId: String(booking.driverId), role: 'driver' },
+          { $inc: { balance: -commission } },
+          { upsert: true }
+        );
+        try {
+          await Transaction.create({
+            userId: String(booking.driverId),
+            role: 'driver',
+            amount: commission,
+            type: 'debit',
+            method: booking.paymentMethod || 'cash',
+            status: 'success',
+            metadata: { bookingId: String(booking._id), reason: 'Commission deduction' }
+          });
+        } catch (_) {}
+      }
+    } catch (_) {}
   } catch (_) {}
   try {
     if (adminUserId) await walletService.credit(adminUserId, commission, 'Commission from trip');
