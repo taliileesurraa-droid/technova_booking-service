@@ -63,22 +63,27 @@ exports.topup = async (req, res) => {
       const pick = (v) => (typeof v === 'string' && v.trim().length) ? v.trim() : null;
       const explicit = pick(paymentMethod);
       if (explicit) return explicit;
+      // Map paymentOptionId -> name
+      try {
+        const optId = req.body && (req.body.paymentOptionId || req.body.id);
+        if (optId) {
+          const PaymentOption = require('../models/paymentOption');
+          const po = await PaymentOption.findById(String(optId)).select({ name: 1 }).lean();
+          if (po && po.name) return String(po.name).trim();
+        }
+      } catch (_) {}
       try {
         const { Driver } = require("../models/userModels");
-        const { Types } = require('mongoose');
         const idStr = String(userId);
-        let me = null;
-        if (Types.ObjectId.isValid(idStr)) {
-          me = await Driver.findById(idStr).select({ paymentPreference: 1 }).populate({ path: 'paymentPreference', select: { name: 1 } });
-        }
-        if (!me) {
+        // Driver._id is String in our schema; always try by _id first
+        let me = await Driver.findOne({ _id: idStr }).select({ paymentPreference: 1 }).populate({ path: 'paymentPreference', select: { name: 1 } });
+        if (!me && (req.user?.email || req.user?.phone || req.user?.phoneNumber || req.user?.mobile)) {
           me = await Driver.findOne({
             $or: [
-              { externalId: idStr },
               { email: req.user?.email || null },
               { phone: req.user?.phone || req.user?.phoneNumber || req.user?.mobile || null }
             ]
-          }).select({ paymentPreference: 1 });
+          }).select({ paymentPreference: 1 }).populate({ path: 'paymentPreference', select: { name: 1 } });
         }
         // Support both populated ref and embedded object shape
         const pref = me && me.paymentPreference;
