@@ -2,8 +2,7 @@ const driverService = require('../services/driverService');
 const driverEvents = require('../events/driverEvents');
 const { calculateLivePricing } = require('../services/bookingPricingService');
 const logger = require('../utils/logger');
-const { markDispatched, wasDispatched } = require('./dispatchRegistry');
-const conn = require('./connectionRegistry');
+const { markDispatched, wasDispatched, registerSocket, unregisterSocket, setSocketAvailability } = require('./dispatchRegistry');
 
 module.exports = (io, socket) => {
   // On connection, send initial nearby unassigned bookings (pre-existing) and current driver bookings
@@ -37,7 +36,7 @@ module.exports = (io, socket) => {
           try { socket.join('drivers'); } catch (_) {}
 
           // Register socket mapping for availability tracking
-          try { conn.registerSocket(driverDbId, socket.id); } catch (_) {}
+          try { registerSocket(driverDbId, socket.id); } catch (_) {}
         })();
       } catch (_) {}
       (async () => {
@@ -152,7 +151,7 @@ try {
       if (available == null) return socket.emit('booking_error', { message: 'available boolean is required', source: 'driver:availability' });
       const updated = await driverService.setAvailability(String(socket.user.id), available, socket.user);
       // Update runtime availability per socket (do not trust token)
-      try { conn.setSocketAvailability(String(socket.user.id), socket.id, !!available); } catch (_) {}
+      try { setSocketAvailability(String(socket.user.id), socket.id, !!available); } catch (_) {}
       driverEvents.emitDriverAvailability(String(socket.user.id), !!available);
       try { logger.info('[socket->driver] availability updated', { userId: socket.user && socket.user.id, available }); } catch (_) {}
 
@@ -246,7 +245,7 @@ try {
   socket.on('disconnect', () => {
     try {
       if (socket.user && socket.user.id) {
-        conn.unregisterSocket(String(socket.user.id), socket.id);
+        unregisterSocket(String(socket.user.id), socket.id);
       }
     } catch (_) {}
   });

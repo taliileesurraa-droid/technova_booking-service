@@ -88,11 +88,11 @@ module.exports = (io, socket) => {
 
         // Filter by runtime socket-level availability (driver toggled availability on this connection)
         try {
-          const conn = require('./connectionRegistry');
+          const { isDriverAvailableBySocket } = require('./dispatchRegistry');
           if (targetDrivers && targetDrivers.length) {
             const filtered = [];
             for (const drv of targetDrivers) {
-              if (conn.isDriverAvailableBySocket(String(drv._id))) filtered.push(drv);
+              if (isDriverAvailableBySocket(String(drv._id))) filtered.push(drv);
             }
             if (filtered.length) {
               targetDrivers.length = 0;
