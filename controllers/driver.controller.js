@@ -58,8 +58,8 @@ const base = {
   get: async (req, res) => {
     try {
       const driver = await Driver.findById(req.params.id)
-        .select('_id name phone email vehicleType available lastKnownLocation rating externalId createdAt updatedAt paymentPreference')
-        .populate({ path: 'paymentPreference', select: { name: 1, logo: 1 } })
+        .select('_id name phone email vehicleType available lastKnownLocation rating externalId createdAt updatedAt paymentPreferences')
+        .populate({ path: 'paymentPreferences', select: { name: 1, logo: 1 } })
         .lean();
       
       if (!driver) {
@@ -91,11 +91,11 @@ const base = {
         available: !!driver.available,
         lastKnownLocation: driver.lastKnownLocation || null,
         rating: driver.rating || 5.0,
-        paymentPreference: driver.paymentPreference ? {
-          _id: String(driver.paymentPreference._id),
-          name: driver.paymentPreference.name,
-          logo: driver.paymentPreference.logo
-        } : null,
+        paymentPreferences: (driver.paymentPreferences || []).map(pref => ({
+          _id: String(pref._id),
+          name: pref.name,
+          logo: pref.logo
+        })),
         createdAt: driver.createdAt,
         updatedAt: driver.updatedAt
       };
@@ -220,20 +220,25 @@ module.exports = {
   listPaymentOptions: async (req, res) => {
     try {
       const rows = await paymentService.getPaymentOptions();
-      let selectedId = null;
+      let selectedIds = [];
       try {
         if (req.user && req.user.type === 'driver') {
-          const me = await Driver.findById(String(req.user.id)).select({ paymentPreference: 1 }).lean();
-          selectedId = me && me.paymentPreference ? String(me.paymentPreference) : null;
+          const me = await Driver.findById(String(req.user.id)).select({ paymentPreferences: 1 }).lean();
+          selectedIds = (me && me.paymentPreferences || []).map(id => String(id));
         }
       } catch (_) {}
-      const data = (rows || []).map(o => ({ id: String(o._id || o.id), name: o.name, logo: o.logo, selected: selectedId ? String(o._id || o.id) === String(selectedId) : false }));
+      const data = (rows || []).map(o => ({ 
+        id: String(o._id || o.id), 
+        name: o.name, 
+        logo: o.logo, 
+        selected: selectedIds.includes(String(o._id || o.id))
+      }));
       return res.json(data);
     } catch (e) { errorHandler(res, e); }
   },
   setPaymentPreference: async (req, res) => {
     try {
-      let { paymentOptionId, driverId, id } = req.body || {};
+      let { paymentOptionId, driverId, id, action = 'add' } = req.body || {};
       // Accept `id` as an alias for `paymentOptionId` for convenience
       if (!paymentOptionId && id) paymentOptionId = id;
       const actingIsDriver = req.user && req.user.type === 'driver';
@@ -242,7 +247,13 @@ module.exports = {
       if (!actingIsDriver && !actingIsAdmin) return res.status(403).json({ message: 'Forbidden: driver or admin required' });
       if (!paymentOptionId) return res.status(400).json({ message: 'paymentOptionId is required' });
       if (!targetDriverId) return res.status(400).json({ message: 'driverId is required for admin to set preference' });
-      const updated = await paymentService.setDriverPaymentPreference(targetDriverId, paymentOptionId);
+      
+      let updated;
+      if (action === 'remove') {
+        updated = await paymentService.removeDriverPaymentPreference(targetDriverId, paymentOptionId);
+      } else {
+        updated = await paymentService.setDriverPaymentPreference(targetDriverId, paymentOptionId);
+      }
       return res.json(updated);
     } catch (e) { errorHandler(res, e); }
   }

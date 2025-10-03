@@ -76,19 +76,22 @@ exports.topup = async (req, res) => {
         const { Driver } = require("../models/userModels");
         const idStr = String(userId);
         // Driver._id is String in our schema; always try by _id first
-        let me = await Driver.findOne({ _id: idStr }).select({ paymentPreference: 1 }).populate({ path: 'paymentPreference', select: { name: 1 } });
+        let me = await Driver.findOne({ _id: idStr }).select({ paymentPreferences: 1 }).populate({ path: 'paymentPreferences', select: { name: 1 } });
         if (!me && (req.user?.email || req.user?.phone || req.user?.phoneNumber || req.user?.mobile)) {
           me = await Driver.findOne({
             $or: [
               { email: req.user?.email || null },
               { phone: req.user?.phone || req.user?.phoneNumber || req.user?.mobile || null }
             ]
-          }).select({ paymentPreference: 1 }).populate({ path: 'paymentPreference', select: { name: 1 } });
+          }).select({ paymentPreferences: 1 }).populate({ path: 'paymentPreferences', select: { name: 1 } });
         }
-        // Support both populated ref and embedded object shape
-        const pref = me && me.paymentPreference;
-        const name = pref && (pref.name || (typeof pref === 'string' ? pref : null));
-        if (name && String(name).trim().length) return String(name).trim();
+        // Use first payment preference if available
+        const prefs = me && me.paymentPreferences;
+        if (prefs && Array.isArray(prefs) && prefs.length > 0) {
+          const firstPref = prefs[0];
+          const name = firstPref && (firstPref.name || (typeof firstPref === 'string' ? firstPref : null));
+          if (name && String(name).trim().length) return String(name).trim();
+        }
       } catch (_) {}
       const err = new Error('paymentMethod is required and no driver payment preference is set');
       err.status = 400;
