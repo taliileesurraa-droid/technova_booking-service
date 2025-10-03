@@ -99,14 +99,24 @@ exports.topup = async (req, res) => {
       const raw = String(method || "").trim();
       const m = raw.toLowerCase();
       const table = {
-        telebirr: 'Telebirr', tele: 'Telebirr', 'tele-birr': 'Telebirr',
-        cbe: 'CBE', 'cbe-birr': 'CBE', cbebirr: 'CBE', 'commercial bank of ethiopia (cbe)': 'CBE', 'commercial bank of ethiopia': 'CBE',
-        hellocash: 'HelloCash', 'hello-cash': 'HelloCash',
-        mpesa: 'MPesa', 'm-pesa': 'MPesa', 'm pesa': 'MPesa',
+        telebirr: 'Telebirr', tele: 'Telebirr', 'tele-birr': 'Telebirr', 'tele birr': 'Telebirr',
+        cbe: 'CBE', 'cbe-birr': 'CBE', cbebirr: 'CBE', 'cbe birr': 'CBE',
+        'commercial bank of ethiopia (cbe)': 'CBE', 'commercial bank of ethiopia': 'CBE', 'commercial bank of ethiopia cbe': 'CBE',
+        hellocash: 'HelloCash', 'hello-cash': 'HelloCash', 'hello cash': 'HelloCash',
+        mpesa: 'MPesa', 'm-pesa': 'MPesa', 'm pesa': 'MPesa', 'm_pesa': 'MPesa',
+        'bank of abyssinia': 'CBE', abyssinia: 'CBE',
+        awash: 'CBE', 'awash bank': 'CBE',
+        dashen: 'CBE', 'dashen bank': 'CBE',
+        bunna: 'CBE', 'bunna bank': 'CBE',
+        amhara: 'CBE', 'amhara bank': 'CBE',
+        birhan: 'CBE', 'birhan bank': 'CBE',
+        berhan: 'CBE', 'berhan bank': 'CBE',
+        zamzam: 'CBE', 'zamzam bank': 'CBE',
+        yimlu: 'CBE',
       };
       if (table[m]) return table[m];
-      // Map common bank names to CBE rails as a fallback
-      const bankKeywords = ['bank of abyssinia', 'abyssinia', 'awash', 'dashen', 'bunna', 'amhara', 'birhan', 'berhan', 'zamzam', 'yimlu'];
+      // Map any residual bank keyword to CBE rails as a fallback
+      const bankKeywords = ['bank of abyssinia', 'abyssinia', 'awash', 'dashen', 'bunna', 'amhara', 'birhan', 'berhan', 'zamzam', 'yimlu', 'bank'];
       if (bankKeywords.some(k => m.includes(k))) return 'CBE';
       return raw; // pass-through for other configured options
     };
@@ -116,14 +126,31 @@ exports.topup = async (req, res) => {
     const notifyUrl =
       process.env.SANTIMPAY_NOTIFY_URL ||
       `${process.env.PUBLIC_BASE_URL || ""}/v1/wallet/webhook`;
-    const gw = await santim.directPayment({
-      id: txId.toString(),
-      amount,
-      paymentReason: reason,
-      notifyUrl,
-      phoneNumber: msisdn,
-      paymentMethod: methodForGateway,
-    });
+    let gw;
+    try {
+      gw = await santim.directPayment({
+        id: txId.toString(),
+        amount,
+        paymentReason: reason,
+        notifyUrl,
+        phoneNumber: msisdn,
+        paymentMethod: methodForGateway,
+      });
+    } catch (err) {
+      // Normalize gateway error message
+      const raw = String(err && err.message ? err.message : err || '');
+      let friendly = null;
+      // Common pattern: 403 {"Reason":"payment method not supported"}
+      const m1 = raw.match(/Reason\":\"([^\"]+)\"/i);
+      if (m1 && m1[1]) friendly = m1[1];
+      if (!friendly && /payment method not supported/i.test(raw)) friendly = 'payment method not supported';
+      // Persist failure on transaction
+      try {
+        await Transaction.findByIdAndUpdate(txId, { status: 'failed', metadata: { gatewayError: raw } });
+      } catch (_) {}
+      const msg = friendly || 'payment failed';
+      return res.status(400).json({ message: msg });
+    }
 
     // Persist gateway response keys if present
     const gwTxnId =
