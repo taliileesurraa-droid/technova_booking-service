@@ -233,63 +233,58 @@ module.exports = {
     try {
       const rows = await paymentService.getPaymentOptions();
       let selectedIds = [];
+      
       try {
-        // Determine which driver to check preferences for
-        let targetDriverId = null;
+        // Try to find driver preferences - check multiple sources
+        let driver = null;
         
-        if (req.user && req.user.type === 'driver') {
-          targetDriverId = String(req.user.id);
-        } else if (req.user && (req.user.type === 'admin' || req.user.roles?.includes('superadmin'))) {
-          // For admin requests, check if driverId is provided in query params
-          targetDriverId = req.query.driverId || req.body.driverId;
+        // First, try to get driver from JWT token
+        if (req.user && req.user.id) {
+          console.log('Looking for driver with JWT user ID:', req.user.id);
+          driver = await Driver.findById(String(req.user.id)).select({ paymentPreferences: 1, paymentPreference: 1 }).lean();
+          
+          // If not found by _id, try by externalId
+          if (!driver) {
+            driver = await Driver.findOne({ externalId: String(req.user.id) }).select({ paymentPreferences: 1, paymentPreference: 1 }).lean();
+          }
         }
         
-        console.log('Payment options request:', {
-          userType: req.user?.type,
-          userId: req.user?.id,
-          targetDriverId,
-          queryDriverId: req.query.driverId,
-          bodyDriverId: req.body.driverId
-        });
+        // If still not found, try to find by email/phone from token
+        if (!driver && req.user && (req.user.email || req.user.phone || req.user.phoneNumber)) {
+          console.log('Trying to find driver by email/phone');
+          driver = await Driver.findOne({
+            $or: [
+              { email: req.user.email || null },
+              { phone: req.user.phone || req.user.phoneNumber || req.user.mobile || null }
+            ]
+          }).select({ paymentPreferences: 1, paymentPreference: 1 }).lean();
+        }
         
-        if (targetDriverId) {
-          // Try multiple ways to find the driver
-          let me = await Driver.findById(String(targetDriverId)).select({ paymentPreferences: 1, paymentPreference: 1 }).lean();
+        console.log('Driver found:', driver ? 'yes' : 'no');
+        if (driver) {
+          console.log('Driver payment preferences:', {
+            paymentPreferences: driver.paymentPreferences,
+            paymentPreference: driver.paymentPreference
+          });
           
-          // Fallback: try by externalId
-          if (!me) {
-            me = await Driver.findOne({ externalId: String(targetDriverId) }).select({ paymentPreferences: 1, paymentPreference: 1 }).lean();
-          }
-          
-          // Fallback: try by email or phone
-          if (!me && (req.user.email || req.user.phone || req.user.phoneNumber)) {
-            me = await Driver.findOne({
-              $or: [
-                { email: req.user.email || null },
-                { phone: req.user.phone || req.user.phoneNumber || req.user.mobile || null }
-              ]
-            }).select({ paymentPreferences: 1, paymentPreference: 1 }).lean();
-          }
-          
-          console.log('Found driver:', me ? 'yes' : 'no', me ? { id: me._id, preferences: me.paymentPreferences, oldPreference: me.paymentPreference } : null);
-          
-          // Handle both old paymentPreference and new paymentPreferences
+          // Handle both old and new format
           let preferences = [];
-          if (me && me.paymentPreferences) {
-            preferences = me.paymentPreferences;
-          } else if (me && me.paymentPreference) {
-            preferences = [me.paymentPreference];
+          if (driver.paymentPreferences && Array.isArray(driver.paymentPreferences)) {
+            preferences = driver.paymentPreferences;
+          } else if (driver.paymentPreference) {
+            preferences = [driver.paymentPreference];
           }
+          
           selectedIds = preferences.map(id => String(id));
           console.log('Selected payment option IDs:', selectedIds);
         }
       } catch (e) {
         console.error('Error fetching driver payment preferences:', e);
       }
+      
       const data = (rows || []).map(o => {
         const optionId = String(o._id || o.id);
         const isSelected = selectedIds.includes(optionId);
-        console.log(`Checking option ${optionId} (${o.name}): selected=${isSelected}, selectedIds=[${selectedIds.join(', ')}]`);
         return { 
           id: optionId, 
           name: o.name, 
@@ -297,7 +292,13 @@ module.exports = {
           selected: isSelected
         };
       });
-      console.log('Payment options response:', data.map(d => ({ id: d.id, name: d.name, selected: d.selected })));
+      
+      console.log('Payment options response summary:', {
+        totalOptions: data.length,
+        selectedCount: data.filter(d => d.selected).length,
+        selectedOptions: data.filter(d => d.selected).map(d => d.name)
+      });
+      
       return res.json(data);
     } catch (e) { errorHandler(res, e); }
   },
