@@ -14,6 +14,8 @@ module.exports = (io, socket) => {
         socket.join(driverRoom);
         // Also join a shared drivers room for optional broadcasts/fallbacks
         try { socket.join('drivers'); } catch (_) {}
+        // Emit confirmation so legacy clients can confirm successful join
+        try { socket.emit('driver:joined', { rooms: [driverRoom, 'drivers'], driverId: String(socket.user.id) }); } catch (_) {}
       } catch (_) {}
       (async () => {
         try {
@@ -108,6 +110,8 @@ try {
           };
           try { logger.info('[socket->driver] emit booking:nearby ', { sid: socket.id, userId: driverId, nearbyCount: payload.bookings.length, currentCount: payload.currentBookings.length }); } catch (_) {}
           socket.emit('booking:nearby', payload);
+          // Backward-compat alias for clients listening on 'nearby'
+          try { socket.emit('nearby', payload); } catch (_) {}
         } catch (_) {}
       })();
     }

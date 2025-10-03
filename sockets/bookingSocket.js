@@ -124,6 +124,8 @@ module.exports = (io, socket) => {
           }
           // Fallback broadcast to all connected drivers to reduce missed deliveries
           try { io.to('drivers').emit('booking:new', payloadForDriversRoom); } catch (_) {}
+          // Backward-compat alias broadcast for legacy listeners
+          try { io.to('drivers').emit('nearby', payloadForDriversRoom); } catch (_) {}
           try { logger.info('[socket->drivers] booking:new broadcast', { bookingId: String(booking._id), sent: sentCount, considered: targetDrivers.length }); } catch (_) {}
         } else {
           try { logger.info('[socket->drivers] no eligible driver (package/distance)', { bookingId: String(booking._id) }); } catch (_) {}
