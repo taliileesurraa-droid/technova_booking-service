@@ -86,6 +86,21 @@ module.exports = (io, socket) => {
         }
         const targetDrivers = financeEligibleDrivers.slice(0, Math.max(1, Math.min(maxDrivers, 200)));
 
+        // Filter by runtime socket-level availability (driver toggled availability on this connection)
+        try {
+          const conn = require('./connectionRegistry');
+          if (targetDrivers && targetDrivers.length) {
+            const filtered = [];
+            for (const drv of targetDrivers) {
+              if (conn.isDriverAvailableBySocket(String(drv._id))) filtered.push(drv);
+            }
+            if (filtered.length) {
+              targetDrivers.length = 0;
+              filtered.forEach(d => targetDrivers.push(d));
+            }
+          }
+        } catch (_) {}
+
         if (targetDrivers && targetDrivers.length) {
           const bookingDetails = {
             id: String(booking._id),
