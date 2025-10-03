@@ -62,39 +62,135 @@ exports.topup = async (req, res) => {
     async function resolvePaymentMethod() {
       const pick = (v) => (typeof v === 'string' && v.trim().length) ? v.trim() : null;
       const explicit = pick(paymentMethod);
-      if (explicit) return explicit;
+      if (explicit) {
+        console.log('Using explicit payment method:', explicit);
+        return explicit;
+      }
+      // Map paymentOptionId -> name
+      try {
+        const optId = req.body && (req.body.paymentOptionId || req.body.id);
+        if (optId) {
+          const PaymentOption = require('../models/paymentOption');
+          const po = await PaymentOption.findById(String(optId)).select({ name: 1 }).lean();
+          if (po && po.name) {
+            console.log('Using payment option from request:', po.name);
+            return String(po.name).trim();
+          }
+        }
+      } catch (e) {
+        console.error('Error resolving payment option from request:', e);
+      }
       try {
         const { Driver } = require("../models/userModels");
-        const me = await Driver.findById(String(userId)).select({ paymentPreference: 1 }).populate({ path: 'paymentPreference', select: { name: 1 } });
-        const name = me && me.paymentPreference && me.paymentPreference.name ? String(me.paymentPreference.name).trim() : null;
-        if (name) return name;
-      } catch (_) {}
+        const idStr = String(userId);
+        console.log('Looking for driver with ID:', idStr);
+        // Driver._id is String in our schema; always try by _id first
+        let me = await Driver.findOne({ _id: idStr }).select({ paymentPreferences: 1, paymentPreference: 1 }).populate([
+          { path: 'paymentPreferences', select: { name: 1 } },
+          { path: 'paymentPreference', select: { name: 1 } }
+        ]);
+        if (!me && (req.user?.email || req.user?.phone || req.user?.phoneNumber || req.user?.mobile)) {
+          console.log('Driver not found by ID, trying by email/phone');
+          me = await Driver.findOne({
+            $or: [
+              { email: req.user?.email || null },
+              { phone: req.user?.phone || req.user?.phoneNumber || req.user?.mobile || null }
+            ]
+          }).select({ paymentPreferences: 1, paymentPreference: 1 }).populate([
+            { path: 'paymentPreferences', select: { name: 1 } },
+            { path: 'paymentPreference', select: { name: 1 } }
+          ]);
+        }
+        console.log('Found driver:', me ? 'yes' : 'no');
+        // Use first payment preference if available (handle both old and new formats)
+        let prefs = [];
+        if (me && me.paymentPreferences && Array.isArray(me.paymentPreferences)) {
+          prefs = me.paymentPreferences;
+        } else if (me && me.paymentPreference) {
+          prefs = [me.paymentPreference];
+        }
+        if (prefs.length > 0) {
+          const firstPref = prefs[0];
+          const name = firstPref && (firstPref.name || (typeof firstPref === 'string' ? firstPref : null));
+          if (name && String(name).trim().length) {
+            console.log('Using first payment preference:', name);
+            return String(name).trim();
+          }
+        }
+        console.log('No payment preferences found for driver');
+      } catch (e) {
+        console.error('Error resolving driver payment preferences:', e);
+      }
       const err = new Error('paymentMethod is required and no driver payment preference is set');
       err.status = 400;
       throw err;
     }
-    // Normalize for SantimPay API accepted values
+    // Normalize for SantimPay API accepted values (broadened names/aliases)
     const normalizePaymentMethod = (method) => {
-      const m = String(method || "").trim().toLowerCase();
-      if (m === "telebirr" || m === "tele") return "Telebirr";
-      if (m === "cbe" || m === "cbe-birr" || m === "cbebirr") return "CBE";
-      if (m === "hellocash" || m === "hello-cash") return "HelloCash";
-      return method; // pass-through for other configured options
+      const raw = String(method || "").trim();
+      const m = raw.toLowerCase();
+      const table = {
+        telebirr: 'Telebirr', tele: 'Telebirr', 'tele-birr': 'Telebirr', 'tele birr': 'Telebirr',
+        cbe: 'CBE', 'cbe-birr': 'CBE', cbebirr: 'CBE', 'cbe birr': 'CBE',
+        'commercial bank of ethiopia (cbe)': 'CBE', 'commercial bank of ethiopia': 'CBE', 'commercial bank of ethiopia cbe': 'CBE',
+        hellocash: 'HelloCash', 'hello-cash': 'HelloCash', 'hello cash': 'HelloCash',
+        mpesa: 'MPesa', 'm-pesa': 'MPesa', 'm pesa': 'MPesa', 'm_pesa': 'MPesa',
+        'bank of abyssinia': 'Abyssinia', abyssinia: 'Abyssinia',
+        awash: 'Awash', 'awash bank': 'Awash',
+        dashen: 'Dashen', 'dashen bank': 'Dashen',
+        bunna: 'Bunna', 'bunna bank': 'Bunna',
+        amhara: 'Amhara', 'amhara bank': 'Amhara',
+        birhan: 'Birhan', 'birhan bank': 'Birhan',
+        berhan: 'Berhan', 'berhan bank': 'Berhan',
+        zamzam: 'ZamZam', 'zamzam bank': 'ZamZam',
+        yimlu: 'Yimlu',
+      };
+      if (table[m]) return table[m];
+      // Map any residual bank keyword to CBE rails as a fallback
+      const bankKeywords = ['bank'];
+      if (bankKeywords.some(k => m.includes(k))) return 'CBE';
+      return raw; // pass-through for other configured options
     };
 
     const methodForGateway = normalizePaymentMethod(await resolvePaymentMethod());
+    
+    // Debug logging
+    console.log('Topup request:', {
+      userId,
+      msisdn,
+      methodForGateway,
+      amount,
+      reason
+    });
 
     const notifyUrl =
       process.env.SANTIMPAY_NOTIFY_URL ||
       `${process.env.PUBLIC_BASE_URL || ""}/v1/wallet/webhook`;
-    const gw = await santim.directPayment({
-      id: txId.toString(),
-      amount,
-      paymentReason: reason,
-      notifyUrl,
-      phoneNumber: msisdn,
-      paymentMethod: methodForGateway,
-    });
+    let gw;
+    try {
+      gw = await santim.directPayment({
+        id: txId.toString(),
+        amount,
+        paymentReason: reason,
+        notifyUrl,
+        phoneNumber: msisdn,
+        paymentMethod: methodForGateway,
+      });
+    } catch (err) {
+      // Normalize gateway error message
+      const raw = String(err && err.message ? err.message : err || '');
+      let friendly = null;
+      // Common pattern: 403 {"Reason":"payment method not supported"}
+      const m1 = raw.match(/Reason\":\"([^\"]+)\"/i);
+      if (m1 && m1[1]) friendly = m1[1];
+      if (!friendly && /payment method not supported/i.test(raw)) friendly = 'payment method not supported';
+      // Persist failure on transaction
+      try {
+        await Transaction.findByIdAndUpdate(txId, { status: 'failed', metadata: { gatewayError: raw } });
+      } catch (_) {}
+      const msg = friendly || 'payment failed';
+      return res.status(400).json({ message: msg });
+    }
 
     // Persist gateway response keys if present
     const gwTxnId =
@@ -380,13 +476,7 @@ exports.withdraw = async (req, res) => {
         err.status = 400;
         throw err;
       }
-      const normalizePaymentMethod2 = (method) => {
-        const m = String(method || "").trim().toLowerCase();
-        if (m === "telebirr" || m === "tele") return "Telebirr";
-        if (m === "cbe" || m === "cbe-birr" || m === "cbebirr") return "CBE";
-        if (m === "hellocash" || m === "hello-cash") return "HelloCash";
-        return method;
-      };
+      const normalizePaymentMethod2 = (method) => normalizePaymentMethod(method);
       const pm = normalizePaymentMethod2(await resolvePaymentMethodWithdraw());
       const gw = await santim.payoutTransfer({
         id: tx._id.toString(),

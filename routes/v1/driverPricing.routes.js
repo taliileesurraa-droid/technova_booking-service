@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const driverPricingController = require('../../controllers/driverPricing.controller');
-const { authenticateToken } = require('../../middleware/auth');
+const { authenticate } = require('../../middleware/auth');
 
 /**
  * Driver Pricing Routes
@@ -51,7 +51,7 @@ router.get('/surge', driverPricingController.getSurgeInfo);
  * @body {string} vehicleType - Vehicle type
  * @body {Object} pricingRules - Pricing rules to validate
  */
-router.post('/validate', authenticateToken, driverPricingController.validatePricingConfig);
+router.post('/validate', authenticate, driverPricingController.validatePricingConfig);
 
 /**
  * @route PUT /v1/driver-pricing/driver/:driverId
@@ -61,7 +61,7 @@ router.post('/validate', authenticateToken, driverPricingController.validatePric
  * @body {string} vehicleType - Vehicle type
  * @body {Object} pricingRules - New pricing rules
  */
-router.put('/driver/:driverId', authenticateToken, driverPricingController.updateDriverPricing);
+router.put('/driver/:driverId', authenticate, driverPricingController.updateDriverPricing);
 
 /**
  * @route POST /v1/driver-pricing/recalculate/:bookingId
@@ -70,7 +70,7 @@ router.put('/driver/:driverId', authenticateToken, driverPricingController.updat
  * @param {string} bookingId - Booking ID
  * @body {string} [reason] - Reason for recalculation
  */
-router.post('/recalculate/:bookingId', authenticateToken, driverPricingController.recalculateBookingPricing);
+router.post('/recalculate/:bookingId', authenticate, driverPricingController.recalculateBookingPricing);
 
 /**
  * @route GET /v1/driver-pricing/breakdown/:bookingId
@@ -78,7 +78,7 @@ router.post('/recalculate/:bookingId', authenticateToken, driverPricingControlle
  * @access Private (Driver/Passenger/Admin)
  * @param {string} bookingId - Booking ID
  */
-router.get('/breakdown/:bookingId', authenticateToken, driverPricingController.getPricingBreakdown);
+router.get('/breakdown/:bookingId', authenticate, driverPricingController.getPricingBreakdown);
 
 /**
  * @route POST /v1/driver-pricing/finalize/:bookingId
@@ -87,7 +87,7 @@ router.get('/breakdown/:bookingId', authenticateToken, driverPricingController.g
  * @param {string} bookingId - Booking ID
  * @body {Object} tripData - Trip completion data (actual distance, duration, waiting time)
  */
-router.post('/finalize/:bookingId', authenticateToken, driverPricingController.calculateFinalPricing);
+router.post('/finalize/:bookingId', authenticate, driverPricingController.calculateFinalPricing);
 
 /**
  * @route GET /v1/driver-pricing/history/:bookingId
@@ -95,6 +95,6 @@ router.post('/finalize/:bookingId', authenticateToken, driverPricingController.c
  * @access Private (Admin/Staff)
  * @param {string} bookingId - Booking ID
  */
-router.get('/history/:bookingId', authenticateToken, driverPricingController.getPricingHistory);
+router.get('/history/:bookingId', authenticate, driverPricingController.getPricingHistory);
 
 module.exports = router;

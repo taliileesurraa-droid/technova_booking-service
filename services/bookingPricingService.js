@@ -79,12 +79,15 @@ async function calculateLivePricing(bookingId, currentLocation) {
     });
 
     if (booking.status !== 'ongoing') {
-      logger.warn('[PricingService] Invalid booking status for pricing update:', {
-        bookingId,
-        currentStatus: booking.status,
-        requiredStatus: 'ongoing'
-      });
-      throw new Error('Pricing updates only available for ongoing trips');
+      // Allow live pricing during accepted status as a preview until trip_started flips to ongoing
+      if (booking.status !== 'accepted') {
+        logger.warn('[PricingService] Invalid booking status for pricing update:', {
+          bookingId,
+          currentStatus: booking.status,
+          requiredStatus: 'ongoing|accepted'
+        });
+        throw new Error('Pricing updates only available for ongoing or accepted trips');
+      }
     }
 
     // Get admin-set pricing for vehicle type

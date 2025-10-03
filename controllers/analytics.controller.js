@@ -366,22 +366,41 @@ exports.getRideHistory = async (req, res) => {
       .lean();
 
     // enrich driver basic info via external service using externalId when present
-    const { getDriversByIds } = require('../integrations/userServiceClient');
-    const driverExternalIds = [...new Set(rides.map(r => r.driverId).filter(Boolean))].map(String);
-    let driverInfoMap = {};
-    if (driverExternalIds.length) {
-      try {
-        const infos = await getDriversByIds(driverExternalIds, req.headers.authorization);
-        driverInfoMap = Object.fromEntries(infos.map(i => [String(i.id), { id: String(i.id), name: i.name, phone: i.phone }]));
-      } catch (_) {}
-    }
+  // Enrich driver details from local DB when possible
+  const driverIds = [...new Set(rides.map(r => r.driverId).filter(Boolean))].map(String);
+  const validDriverIds = driverIds.filter(id => require('mongoose').Types.ObjectId.isValid(id));
+  let driverInfoMap = {};
+  if (validDriverIds.length) {
+    try {
+      const drivers = await Driver.find({ _id: { $in: validDriverIds } }).select({ _id: 1, name: 1, phone: 1, email: 1 }).lean();
+      driverInfoMap = Object.fromEntries(drivers.map(d => [String(d._id), { id: String(d._id), name: d.name, phone: d.phone, email: d.email }]));
+    } catch (_) {}
+  }
+
+  // Enrich passenger details from local DB when possible
+  const passengerIds = [...new Set(rides.map(r => r.passengerId).filter(Boolean))].map(String);
+  const validPassengerIds = passengerIds.filter(id => require('mongoose').Types.ObjectId.isValid(id));
+  let passengerMap = {};
+  if (validPassengerIds.length) {
+    try {
+      const passengers = await Passenger.find({ _id: { $in: validPassengerIds } }).select({ _id: 1, name: 1, phone: 1, email: 1 }).lean();
+      passengerMap = Object.fromEntries(passengers.map(p => [String(p._id), { id: String(p._id), name: p.name, phone: p.phone, email: p.email }]));
+    } catch (_) {}
+  }
 
     const total = await Booking.countDocuments(query);
 
-    const data = rides.map(r => ({
+  const data = rides.map(r => {
+    const passenger = r.passengerId
+      ? (passengerMap[String(r.passengerId)] || { id: String(r.passengerId), name: r.passengerName, phone: r.passengerPhone })
+      : undefined;
+    const driver = r.driverId ? driverInfoMap[String(r.driverId)] : undefined;
+    return {
       ...r,
-      driver: r.driverId ? driverInfoMap[String(r.driverId)] : undefined
-    }));
+      passenger,
+      driver
+    };
+  });
 
     res.json({
       rides: data,

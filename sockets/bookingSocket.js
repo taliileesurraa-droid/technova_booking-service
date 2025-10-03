@@ -56,17 +56,22 @@ module.exports = (io, socket) => {
         const financeService = require('../services/financeService');
 
         const radiusKm = parseFloat(process.env.BROADCAST_RADIUS_KM || process.env.RADIUS_KM || '5');
-        const drivers = await Driver.find({ available: true, ...(booking.vehicleType ? { vehicleType: booking.vehicleType } : {}) }).lean();
+        // Do not rely on DB availability; socket-level availability filter is applied later
+        const drivers = await Driver.find(booking.vehicleType ? { vehicleType: booking.vehicleType } : {}).lean();
 
-        const withDistance = drivers.map(d => ({
-          driver: d,
-          distanceKm: d.lastKnownLocation && d.lastKnownLocation.latitude != null && d.lastKnownLocation.longitude != null
-            ? (geolib.getDistance(
-                { latitude: d.lastKnownLocation.latitude, longitude: d.lastKnownLocation.longitude },
-                { latitude: booking.pickup.latitude, longitude: booking.pickup.longitude }
-              ) / 1000)
-            : Number.POSITIVE_INFINITY
-        }))
+        const { getLiveLocation } = require('./dispatchRegistry');
+        const withDistance = drivers.map(d => {
+          const live = getLiveLocation(String(d._id));
+          const base = live && live.latitude != null && live.longitude != null
+            ? { latitude: live.latitude, longitude: live.longitude }
+            : (d.lastKnownLocation && d.lastKnownLocation.latitude != null && d.lastKnownLocation.longitude != null
+              ? { latitude: d.lastKnownLocation.latitude, longitude: d.lastKnownLocation.longitude }
+              : null);
+          const distKm = base
+            ? (geolib.getDistance(base, { latitude: booking.pickup.latitude, longitude: booking.pickup.longitude }) / 1000)
+            : Number.POSITIVE_INFINITY;
+          return { driver: d, distanceKm: distKm };
+        })
         .filter(x => Number.isFinite(x.distanceKm) && x.distanceKm <= radiusKm)
         .sort((a, b) => a.distanceKm - b.distanceKm);
 
@@ -86,12 +91,35 @@ module.exports = (io, socket) => {
         }
         const targetDrivers = financeEligibleDrivers.slice(0, Math.max(1, Math.min(maxDrivers, 200)));
 
+        // Filter by runtime socket-level availability (driver toggled availability on this connection)
+        try {
+          const { isDriverAvailableBySocket } = require('./dispatchRegistry');
+          if (targetDrivers && targetDrivers.length) {
+            const filtered = [];
+            for (const drv of targetDrivers) {
+              if (isDriverAvailableBySocket(String(drv._id))) filtered.push(drv);
+            }
+            if (filtered.length) {
+              targetDrivers.length = 0;
+              filtered.forEach(d => targetDrivers.push(d));
+            }
+          }
+        } catch (_) {}
+
         if (targetDrivers && targetDrivers.length) {
+          // Keep passenger format as original: { id, name, phone }
+          let passengerForDriver = { id: passengerId, name: socket.user.name, phone: socket.user.phone };
+          try {
+            const { Passenger } = require('../models/userModels');
+            const pdoc = await Passenger.findById(passengerId).select({ _id: 1, name: 1, phone: 1 }).lean();
+            if (pdoc) passengerForDriver = { id: String(pdoc._id), name: pdoc.name, phone: pdoc.phone };
+          } catch (_) {}
+
           const bookingDetails = {
             id: String(booking._id),
             status: 'requested',
             passengerId,
-            passenger: { id: passengerId, name: socket.user.name, phone: socket.user.phone },
+            passenger: passengerForDriver,
             vehicleType: booking.vehicleType,
             pickup: booking.pickup,
             dropoff: booking.dropoff,
@@ -107,7 +135,7 @@ module.exports = (io, socket) => {
             vehicleType: booking.vehicleType,
             pickup: booking.pickup,
             dropoff: booking.dropoff,
-            passenger: { id: passengerId, name: socket.user.name, phone: socket.user.phone }
+            passenger: passengerForDriver
           };
           const payloadForDriver = { id: String(booking._id), bookingId: String(booking._id), booking: bookingDetails, patch, user: { id: passengerId, type: 'passenger' } };
           // Also prepare a broadcast payload for the shared 'drivers' room as a fallback delivery channel
@@ -115,9 +143,12 @@ module.exports = (io, socket) => {
           let sentCount = 0;
           for (const drv of targetDrivers) {
             const driverId = String(drv._id);
+            // Do not attach extra fields; keep original format
             const channel = `driver:${driverId}`;
             if (!wasDispatched(String(booking._id), driverId)) {
               sendMessageToSocketId(channel, { event: 'booking:new', data: payloadForDriver });
+              // Also emit incremental nearby update with the same schema as initial snapshot
+              try { io.to(channel).emit('booking:nearby', { init: false, driverId, bookings: [bookingDetails], currentBookings: [], user: { id: driverId, type: 'driver' } }); } catch (_) {}
               markDispatched(String(booking._id), driverId);
               sentCount++;
             }
@@ -153,10 +184,19 @@ module.exports = (io, socket) => {
       bookingEvents.emitBookingUpdate(String(updated._id), { status: 'accepted', driverId: String(socket.user.id), acceptedAt: updated.acceptedAt });
       try { logger.info('[socket->room] booking:update accepted', { bookingId: String(updated._id), driverId: String(socket.user.id) }); } catch (_) {}
 
-      // Emit explicit booking_accept with enriched driver details to booking room
+      // Emit explicit booking_accept with enriched driver and booking details to booking room
       try {
         const { Driver } = require('../models/userModels');
+        const { Passenger } = require('../models/userModels');
         const d = await Driver.findById(String(socket.user.id)).lean();
+        const bfull = await Booking.findById(String(updated._id)).lean();
+        let passengerForDriver = undefined;
+        try {
+          if (bfull && bfull.passengerId) {
+            const p = await Passenger.findById(String(bfull.passengerId)).select({ _id: 1, name: 1, phone: 1 }).lean();
+            if (p) passengerForDriver = { id: String(p._id), name: p.name, phone: p.phone };
+          }
+        } catch (_) {}
         const tokenCarName = socket.user && (socket.user.carName || socket.user.carModel || socket.user.vehicleName || socket.user.carname);
         const tokenCarPlate = socket.user && (socket.user.carPlate || socket.user.car_plate || socket.user.carPlateNumber || socket.user.plate || socket.user.plateNumber);
         const tokenCarColor = socket.user && (socket.user.carColor || socket.user.color);
@@ -176,12 +216,27 @@ module.exports = (io, socket) => {
           carPlate: carPlateOut,
           rating: (d && (d.rating || d.rating === 0 ? d.rating : undefined)) ?? 5.0
         };
+        const bookingDetails = bfull ? {
+          id: String(bfull._id),
+          status: bfull.status,
+          passengerId: bfull.passengerId ? String(bfull.passengerId) : undefined,
+          passenger: passengerForDriver || (bfull.passengerId ? { id: String(bfull.passengerId), name: bfull.passengerName, phone: bfull.passengerPhone } : undefined),
+          vehicleType: bfull.vehicleType,
+          pickup: bfull.pickup,
+          dropoff: bfull.dropoff,
+          fareEstimated: bfull.fareEstimated,
+          fareFinal: bfull.fareFinal,
+          distanceKm: bfull.distanceKm,
+          createdAt: bfull.createdAt,
+          updatedAt: bfull.updatedAt
+        } : undefined;
         const acceptPayload = {
           id: String(updated._id),
           bookingId: String(updated._id),
           status: 'accepted',
           driverId: String(socket.user.id),
           driver: driverPayload,
+          booking: bookingDetails,
           user: { id: String(socket.user.id), type: 'driver' }
         };
         try { logger.info('[socket->room] booking_accept', { room, bookingId: acceptPayload.bookingId, driverId: driverPayload.id }); } catch (_) {}

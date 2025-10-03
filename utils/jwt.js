@@ -36,9 +36,35 @@ function socketAuth(socket, next) {
     const carModel = src.carModel || src.carName || src.vehicleName || src.carname || driverObj.carModel || driverObj.carName;
     const carPlate = src.carPlate || src.car_plate || src.carPlateNumber || src.plate || src.plateNumber || driverObj.carPlate;
     const carColor = src.carColor || src.color || driverObj.carColor;
+    // Resolve id from common claim names: id, userId, driverId, uid, sub
+    const resolvedId = src.id
+      || src.userId
+      || src.driverId
+      || src.uid
+      || src.sub
+      || decoded.id;
+
+    // Resolve type/role from common claim names: type, userType, role
+    const resolvedTypeRaw = (src.type || src.userType || src.role || decoded.type || '');
+    // Normalize role/type variants to stable tokens
+    const normalizeRoleString = (value) => {
+      if (!value) return '';
+      let s = String(value).toLowerCase();
+      s = s.replace(/^role[_:\-\s]?/, '');
+      s = s.replace(/^scope[_:\-\s]?/, '');
+      s = s.replace(/^urn:[^:]+:/, '');
+      s = s.replace(/^[^:]+:([^:]+)$/, '$1');
+      s = s.replace(/[\s\-]+/g, '_');
+      if (s === 'drivers') s = 'driver';
+      if (s === 'passengers') s = 'passenger';
+      if (s === 'admins') s = 'admin';
+      return s;
+    };
+    const resolvedType = normalizeRoleString(resolvedTypeRaw);
+
     socket.user = {
-      id: src.id ? String(src.id) : (decoded.id ? String(decoded.id) : undefined),
-      type: src.type || decoded.type,
+      id: resolvedId != null ? String(resolvedId) : undefined,
+      type: resolvedType,
       name,
       phone,
       email,
