@@ -107,11 +107,19 @@ module.exports = (io, socket) => {
         } catch (_) {}
 
         if (targetDrivers && targetDrivers.length) {
+          // Enrich passenger details for driver payload
+          let passengerForDriver = { id: passengerId, name: socket.user.name, phone: socket.user.phone, email: socket.user.email };
+          try {
+            const { Passenger } = require('../models/userModels');
+            const pdoc = await Passenger.findById(passengerId).select({ _id: 1, name: 1, phone: 1, email: 1, emergencyContacts: 1 }).lean();
+            if (pdoc) passengerForDriver = { id: String(pdoc._id), name: pdoc.name, phone: pdoc.phone, email: pdoc.email, emergencyContacts: pdoc.emergencyContacts };
+          } catch (_) {}
+
           const bookingDetails = {
             id: String(booking._id),
             status: 'requested',
             passengerId,
-            passenger: { id: passengerId, name: socket.user.name, phone: socket.user.phone },
+            passenger: passengerForDriver,
             vehicleType: booking.vehicleType,
             pickup: booking.pickup,
             dropoff: booking.dropoff,
@@ -127,7 +135,7 @@ module.exports = (io, socket) => {
             vehicleType: booking.vehicleType,
             pickup: booking.pickup,
             dropoff: booking.dropoff,
-            passenger: { id: passengerId, name: socket.user.name, phone: socket.user.phone }
+            passenger: passengerForDriver
           };
           const payloadForDriver = { id: String(booking._id), bookingId: String(booking._id), booking: bookingDetails, patch, user: { id: passengerId, type: 'passenger' }, recipient: { type: 'driver' } };
           // Also prepare a broadcast payload for the shared 'drivers' room as a fallback delivery channel

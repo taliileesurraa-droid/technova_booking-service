@@ -106,21 +106,31 @@ try {
     // Filter by package affordability
     const w = await Wallet.findOne({ userId: driverId, role: 'driver' }).lean();
     const balance = w ? Number(w.balance || 0) : 0;
-    nearby = withDistance
+    const filtered = withDistance
       .filter(x => financeService.canAcceptBooking(balance, x.booking.fareFinal || x.booking.fareEstimated || 0))
-      .slice(0, 50)
-      .map(x => ({
-        id: String(x.booking._id),
-        status: x.booking.status,
-        pickup: x.booking.pickup,
-        dropoff: x.booking.dropoff,
-        fareEstimated: x.booking.fareEstimated,
-        fareFinal: x.booking.fareFinal,
-        distanceKm: Math.round(x.distanceKm * 100) / 100,
-        passenger: x.booking.passengerId ? { id: String(x.booking.passengerId), name: x.booking.passengerName, phone: x.booking.passengerPhone } : undefined,
-        createdAt: x.booking.createdAt,
-        updatedAt: x.booking.updatedAt
-      }));
+      .slice(0, 50);
+
+    // Bulk fetch passenger details for enrichment
+    let passengerMap = {};
+    try {
+      const { Passenger } = require('../models/userModels');
+      const ids = [...new Set(filtered.map(x => x.booking.passengerId).filter(Boolean))];
+      const docs = ids.length ? await Passenger.find({ _id: { $in: ids } }).select({ _id: 1, name: 1, phone: 1, email: 1, emergencyContacts: 1 }).lean() : [];
+      passengerMap = Object.fromEntries(docs.map(p => [String(p._id), { id: String(p._id), name: p.name, phone: p.phone, email: p.email, emergencyContacts: p.emergencyContacts }]));
+    } catch (_) {}
+
+    nearby = filtered.map(x => ({
+      id: String(x.booking._id),
+      status: x.booking.status,
+      pickup: x.booking.pickup,
+      dropoff: x.booking.dropoff,
+      fareEstimated: x.booking.fareEstimated,
+      fareFinal: x.booking.fareFinal,
+      distanceKm: Math.round(x.distanceKm * 100) / 100,
+      passenger: x.booking.passengerId ? (passengerMap[String(x.booking.passengerId)] || { id: String(x.booking.passengerId), name: x.booking.passengerName, phone: x.booking.passengerPhone }) : undefined,
+      createdAt: x.booking.createdAt,
+      updatedAt: x.booking.updatedAt
+    }));
 
   }
 } catch (_) {}
