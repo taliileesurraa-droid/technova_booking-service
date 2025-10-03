@@ -56,8 +56,7 @@ module.exports = (io, socket) => {
         const financeService = require('../services/financeService');
 
         const radiusKm = parseFloat(process.env.BROADCAST_RADIUS_KM || process.env.RADIUS_KM || '5');
-        // Do not require availability; broadcast to nearest drivers regardless of availability state
-        const drivers = await Driver.find(booking.vehicleType ? { vehicleType: booking.vehicleType } : {}).lean();
+        const drivers = await Driver.find({ available: true, ...(booking.vehicleType ? { vehicleType: booking.vehicleType } : {}) }).lean();
 
         const withDistance = drivers.map(d => ({
           driver: d,
@@ -119,6 +118,8 @@ module.exports = (io, socket) => {
             const channel = `driver:${driverId}`;
             if (!wasDispatched(String(booking._id), driverId)) {
               sendMessageToSocketId(channel, { event: 'booking:new', data: payloadForDriver });
+              // Also emit incremental nearby update so clients listening on booking:nearby receive new bookings after connect
+              try { io.to(channel).emit('booking:nearby', { init: false, driverId, bookings: [bookingDetails], patch }); } catch (_) {}
               markDispatched(String(booking._id), driverId);
               sentCount++;
             }
