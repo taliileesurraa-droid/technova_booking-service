@@ -1,5 +1,6 @@
 const driverService = require('../services/driverService');
 const driverEvents = require('../events/driverEvents');
+const { calculateLivePricing } = require('../services/bookingPricingService');
 const logger = require('../utils/logger');
 const { markDispatched, wasDispatched } = require('./dispatchRegistry');
 
@@ -11,6 +12,8 @@ module.exports = (io, socket) => {
       try {
         const driverRoom = `driver:${String(socket.user.id)}`;
         socket.join(driverRoom);
+        // Also join a shared drivers room for optional broadcasts/fallbacks
+        try { socket.join('drivers'); } catch (_) {}
       } catch (_) {}
       (async () => {
         try {
@@ -155,6 +158,160 @@ try {
       try { logger.info('[socket->broadcast] driver location updated', { userId: socket.user && socket.user.id, lat: d.lastKnownLocation?.latitude, lon: d.lastKnownLocation?.longitude }); } catch (_) {}
     } catch (err) {
       socket.emit('booking_error', { message: 'Failed to process location update', source: 'booking:driver_location_update' });
+    }
+  });
+
+  // Handle pricing update requests from driver
+  socket.on('pricing:update', async (payload) => {
+    const startTime = Date.now();
+    try {
+      logger.info('[Socket] Received pricing:update request:', { 
+        socketId: socket.id, 
+        driverId: socket.user && socket.user.id,
+        payload,
+        timestamp: new Date().toISOString()
+      });
+      
+      if (!socket.user || String(socket.user.type).toLowerCase() !== 'driver') {
+        logger.warn('[Socket] Unauthorized pricing:update request:', {
+          socketId: socket.id,
+          userType: socket.user?.type || 'none',
+          userId: socket.user?.id || 'none'
+        });
+        return socket.emit('pricing:error', { 
+          message: 'Unauthorized: driver token required', 
+          source: 'pricing:update' 
+        });
+      }
+
+      const raw = typeof payload === 'string' ? JSON.parse(payload) : (payload || {});
+      const { bookingId, location } = raw;
+      
+      logger.info('[Socket] Parsed pricing:update payload:', {
+        socketId: socket.id,
+        driverId: socket.user.id,
+        bookingId,
+        location,
+        hasValidLocation: !!(location && location.latitude && location.longitude)
+      });
+      
+      if (!bookingId || !location || !location.latitude || !location.longitude) {
+        logger.error('[Socket] Invalid pricing:update payload:', {
+          socketId: socket.id,
+          driverId: socket.user.id,
+          bookingId: bookingId || 'missing',
+          location: location || 'missing',
+          missingFields: {
+            bookingId: !bookingId,
+            location: !location,
+            latitude: !location?.latitude,
+            longitude: !location?.longitude
+          }
+        });
+        return socket.emit('pricing:error', { 
+          message: 'bookingId and location (with latitude/longitude) are required',
+          source: 'pricing:update'
+        });
+      }
+
+      // Verify this driver is assigned to the booking
+      const driverId = String(socket.user.id);
+      
+      logger.info('[Socket] Verifying booking assignment:', {
+        socketId: socket.id,
+        driverId,
+        bookingId
+      });
+
+      const { Booking } = require('../models/bookingModels');
+      const booking = await Booking.findById(bookingId);
+      
+      if (!booking) {
+        logger.error('[Socket] Booking not found for pricing update:', {
+          socketId: socket.id,
+          driverId,
+          bookingId
+        });
+        return socket.emit('pricing:error', { 
+          message: 'Booking not found',
+          source: 'pricing:update'
+        });
+      }
+
+      logger.info('[Socket] Booking found, verifying assignment:', {
+        socketId: socket.id,
+        bookingId,
+        requestingDriverId: driverId,
+        assignedDriverId: booking.driverId,
+        bookingStatus: booking.status,
+        isAssigned: String(booking.driverId) === driverId
+      });
+
+      if (String(booking.driverId) !== driverId) {
+        logger.warn('[Socket] Driver not assigned to booking:', {
+          socketId: socket.id,
+          bookingId,
+          requestingDriverId: driverId,
+          assignedDriverId: booking.driverId
+        });
+        return socket.emit('pricing:error', { 
+          message: 'You are not assigned to this booking',
+          source: 'pricing:update'
+        });
+      }
+
+      // Calculate live pricing based on current location
+      logger.info('[Socket] Calling pricing service:', {
+        socketId: socket.id,
+        driverId,
+        bookingId,
+        location
+      });
+
+      const pricingResult = await calculateLivePricing(bookingId, location);
+      
+      logger.info('[Socket] Pricing calculation successful, sending to driver:', {
+        socketId: socket.id,
+        driverId,
+        bookingId,
+        pricingResult: {
+          currentFare: pricingResult.currentFare,
+          distanceTraveled: pricingResult.distanceTraveled,
+          updatedAt: pricingResult.updatedAt
+        }
+      });
+      
+      // Send pricing update back to the driver
+      socket.emit('pricing:update', pricingResult);
+      
+      const processingTime = Date.now() - startTime;
+      logger.info('[Socket] Pricing update completed successfully:', { 
+        socketId: socket.id,
+        driverId, 
+        bookingId, 
+        currentFare: pricingResult.currentFare,
+        distanceTraveled: pricingResult.distanceTraveled,
+        processingTimeMs: processingTime,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      const processingTime = Date.now() - startTime;
+      logger.error('[Socket] Error in pricing update flow:', {
+        socketId: socket.id,
+        driverId: socket.user?.id,
+        bookingId: payload?.bookingId || 'unknown',
+        error: error.message,
+        stack: error.stack,
+        processingTimeMs: processingTime,
+        timestamp: new Date().toISOString()
+      });
+      
+      socket.emit('pricing:error', { 
+        message: 'Failed to calculate pricing update',
+        error: error.message,
+        source: 'pricing:update'
+      });
     }
   });
 };

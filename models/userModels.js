@@ -31,7 +31,7 @@ const DriverSchema = new mongoose.Schema({
   phone: { type: String },
   email: { type: String },
   password: { type: String },
-  vehicleType: { type: String, enum: ['mini', 'sedan', 'suv', 'mpv', 'motorbike', 'bajaj'] },
+  vehicleType: { type: String, enum: ['mini', 'sedan', 'suv', 'mpv'] },
   available: { type: Boolean, default: false },
   lastKnownLocation: { 
     latitude: Number, 

@@ -1,0 +1,3199 @@
+{
+<<<<<<< HEAD
+	"info": {
+		"_postman_id": "1d5abc03-561c-4269-931c-c2ae938f5e4a",
+		"name": "Booking Service API collection",
+		"description": "Comprehensive API collection for ride service with organized folders, all endpoints, and axios integration",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "24624704",
+		"_collection_link": "https://lunar-eclipse-303269.postman.co/workspace/My-Workspace~2fca546d-3b99-4f54-8acb-523fdaa9f75b/collection/24624704-1d5abc03-561c-4269-931c-c2ae938f5e4a?action=share&source=collection_link&creator=24624704"
+	},
+	"item": [
+		{
+			"name": "🧩 Socket.IO Events",
+			"item": [
+				{
+					"name": "Socket Connect (Passenger)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-Postman-Note",
+								"value": "Use a Socket.IO client. This is a documentation stub."
+							}
+						],
+						"url": {
+							"raw": ""
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "booking_request (Passenger)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-Postman-Note",
+								"value": "Socket.IO emit: booking_request"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"vehicleType\": \"mini\",\n  \"pickup\": { \"latitude\": 40.7128, \"longitude\": -74.0060 },\n  \"dropoff\": { \"latitude\": 40.7589, \"longitude\": -73.9851 }\n}"
+						},
+						"url": {
+							"raw": ""
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "booking_accept (Driver)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-Postman-Note",
+								"value": "Socket.IO emit: booking_accept"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"bookingId\": \"{{bookingId}}\"\n}"
+						},
+						"url": {
+							"raw": ""
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "booking_cancel (Driver/Passenger)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-Postman-Note",
+								"value": "Socket.IO emit: booking_cancel"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"bookingId\": \"{{bookingId}}\",\n  \"reason\": \"no-show\"\n}"
+						},
+						"url": {
+							"raw": ""
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "booking:status_request (Any)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-Postman-Note",
+								"value": "Socket.IO emit: booking:status_request"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"bookingId\": \"{{bookingId}}\"\n}"
+						},
+						"url": {
+							"raw": ""
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "booking:ETA_update (Driver)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-Postman-Note",
+								"value": "Socket.IO emit: booking:ETA_update"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"bookingId\": \"{{bookingId}}\",\n  \"etaMinutes\": 6,\n  \"message\": \"Coming soon\"\n}"
+						},
+						"url": {
+							"raw": ""
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "driver:availability (Driver)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-Postman-Note",
+								"value": "Socket.IO emit: driver:availability"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"available\": true\n}"
+						},
+						"url": {
+							"raw": ""
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "booking:driver_location_update (Driver)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-Postman-Note",
+								"value": "Socket.IO emit: booking:driver_location_update"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"latitude\": 40.7128,\n  \"longitude\": -74.0060,\n  \"bearing\": 45,\n  \"bookingId\": \"{{bookingId}}\"\n}"
+						},
+						"url": {
+							"raw": ""
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "booking_accept (Server emits payload)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-Postman-Note",
+								"value": "Documentation of server-emitted payload"
+							}
+						],
+						"url": {
+							"raw": ""
+						}
+					},
+					"response": [
+						{
+							"name": "Example",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "socketio://emit/booking_accept",
+									"protocol": "socketio",
+									"host": [
+										"emit"
+									],
+									"path": [
+										"booking_accept"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n  \"bookingId\": \"64f2b8d8e1234567890abcd\",\n  \"status\": \"accepted\",\n  \"driver\": {\n    \"id\": \"64f2a93c8b12ef1234567890\",\n    \"name\": \"John Doe\",\n    \"phone\": \"251900000000\",\n    \"carName\": \"Toyota Vitz\",\n    \"vehicleType\": \"Sedan\",\n    \"rating\": 4.8,\n    \"carPlate\": \"AB-12345\"\n  }\n}"
+						}
+					]
+				},
+				{
+					"name": "driver:init_bookings (Server emits payload)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-Postman-Note",
+								"value": "Documentation of server-emitted payload"
+							}
+						],
+						"url": {
+							"raw": ""
+						}
+					},
+					"response": [
+						{
+							"name": "Example",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "socketio://emit/driver:init_bookings",
+									"protocol": "socketio",
+									"host": [
+										"emit"
+									],
+									"path": [
+										"driver:init_bookings"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n  \"driverId\": \"64f2a93c8b12ef1234567890\",\n  \"bookings\": [\n    {\n      \"bookingId\": \"64f2b8d8e1234567890abcd\",\n      \"status\": \"pending\",\n      \"pickup\": \"Bole Airport\",\n      \"dropoff\": \"CMC\",\n      \"fare\": 350,\n      \"passenger\": {\n        \"id\": \"64f2b8d8e1234567890abcd\",\n        \"name\": \"Jane Doe\",\n        \"phone\": \"251911111111\"\n      }\n    }\n  ]\n}"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "🔐 Authentication",
+			"item": [
+				{
+					"name": "Passenger Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"  const json = pm.response.json();",
+									"  if (json.token) pm.environment.set('passengerToken', json.token);",
+									"  if (json.passenger && json.passenger._id) {",
+									"    pm.environment.set('passengerId', json.passenger._id);",
+									"    pm.environment.set('passengerName', json.passenger.name);",
+									"  }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"john.smith@example.com\",\n  \"password\": \"SecurePass123!\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/v1/auth/passenger/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"v1",
+								"auth",
+								"passenger",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Staff Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"  const json = pm.response.json();",
+									"  if (json.token) pm.environment.set('staffToken', json.token);",
+									"  if (json.staff && json.staff._id) {",
+									"    pm.environment.set('staffId', json.staff._id);",
+									"    pm.environment.set('staffName', json.staff.fullName);",
+									"  }",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"staff_dispatch\",\n  \"password\": \"StaffPass123!\"\n}"
+						},
+						"url": {
+							"raw": "{{baseurl}}/v1/auth/staff/login",
+							"host": [
+								"{{baseurl}}"
+							],
+							"path": [
+								"v1",
+								"auth",
+								"staff",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Admin Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"  const json = pm.response.json();",
+									"  if (json.token) pm.environment.set('adminToken', json.token);",
+									"  if (json.admin && json.admin._id) {",
+									"    pm.environment.set('adminId', json.admin._id);",
+									"    pm.environment.set('adminName', json.admin.fullName);",
+									"  }",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"rootadmin\",\n  \"password\": \"admin123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseurl}}/auth/admin/login",
+							"host": [
+								"{{baseurl}}"
+							],
+							"path": [
+								"auth",
+								"admin",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Staff Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"  const json = pm.response.json();",
+									"  if (json.token) pm.environment.set('staffToken', json.token);",
+									"  if (json.staff && json.staff._id) {",
+									"    pm.environment.set('staffId', json.staff._id);",
+									"    pm.environment.set('staffName', json.staff.fullName);",
+									"  }",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"staff_user\",\n  \"password\": \"StaffPass123!\"\n}"
+						},
+						"url": {
+							"raw": "{{baseurl}}/v1/auth/staff/login",
+							"host": [
+								"{{baseurl}}"
+							],
+							"path": [
+								"v1",
+								"auth",
+								"staff",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Driver login",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n\"email\": \"test1@example.com\",\r\n\"password\": \"123456\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseurl}}/auth/driver/login",
+							"host": [
+								"{{baseurl}}"
+							],
+							"path": [
+								"auth",
+								"driver",
+								"login"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "Authentication endpoints for all user types"
+		},
+		{
+			"name": "👤 Passenger APIs",
+			"item": [
+				{
+					"name": "🚗 Driver Discovery",
+					"item": [
+						{
+							"name": "Discover Drivers  Estimate Fare (Combined)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test('Response includes drivers array', function () {",
+											"  const json = pm.response.json();",
+											"  pm.expect(json).to.have.property('drivers');",
+											"  pm.expect(json.drivers).to.be.an('array');",
+											"});",
+											"pm.test('Response includes fare estimate', function () {",
+											"  const json = pm.response.json();",
+											"  pm.expect(json).to.have.property('estimate');",
+											"  pm.expect(json.estimate).to.have.property('vehicleType');",
+											"  pm.expect(json.estimate).to.have.property('distanceKm');",
+											"  pm.expect(json.estimate).to.have.property('estimatedFare');",
+											"  pm.expect(json.estimate).to.have.property('fareBreakdown');",
+											"});",
+											"pm.test('Each driver includes required fields', function () {",
+											"  const json = pm.response.json();",
+											"  if (json.drivers.length > 0) {",
+											"    json.drivers.forEach(driver => {",
+											"      pm.expect(driver).to.have.property('id');",
+											"      pm.expect(driver).to.have.property('driverId');",
+											"      pm.expect(driver).to.have.property('vehicleType');",
+											"      pm.expect(driver).to.have.property('rating');",
+											"      pm.expect(driver).to.have.property('distanceKm');",
+											"      pm.expect(driver).to.have.property('driver');",
+											"    });",
+											"  }",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{passengerToken}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"vehicleType\": \"mini\",\n  \"radiusKm\": 5,\n  \"pickup\": {\n    \"latitude\": 40.7128,\n    \"longitude\": -74.0060,\n    \"address\": \"Times Square, New York, NY\"\n  },\n  \"dropoff\": {\n    \"latitude\": 40.7589,\n    \"longitude\": -73.9851,\n    \"address\": \"Central Park, New York, NY\"\n  }\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/v1/drivers/discover-and-estimate",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"v1",
+										"drivers",
+										"discover-and-estimate"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Find Available Drivers (Legacy)",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{passengerToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/v1/drivers/available?latitude=40.7128&longitude=-74.0060&radiusKm=5&vehicleType=mini",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"v1",
+										"drivers",
+										"available"
+									],
+									"query": [
+										{
+											"key": "latitude",
+											"value": "40.7128"
+										},
+										{
+											"key": "longitude",
+											"value": "-74.0060"
+										},
+										{
+											"key": "radiusKm",
+											"value": "5"
+										},
+										{
+											"key": "vehicleType",
+											"value": "mini"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "💰 Fare Estimation",
+					"item": [
+						{
+							"name": "Estimate Fare",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6OSwidHlwZSI6InBhc3NlbmdlciIsInJvbGVzIjpbXSwicGVybWlzc2lvbnMiOltdLCJuYW1lIjoiSm9obiBTbWl0aCIsInBob25lIjoiKzEyMzQ1Njc4OTAiLCJlbWFpbCI6ImpvaG4uc21pdGhAZXhhbXBsZS5jb20iLCJ3YWxsZXQiOiIwLjAwIiwicmF0aW5nIjo1LCJyZXdhcmRQb2ludHMiOjAsImlhdCI6MTc1NzY2OTUxMiwiZXhwIjoxNzU4Mjc0MzEyfQ.yVpKRFToIHT4m7u0RrHYUtVI3yURuy6S-eWzAIKF-yU",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{passengerToken}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"vehicleType\": \"mini\",\n  \"pickup\": {\n    \"latitude\": 40.7128,\n    \"longitude\": -74.0060,\n    \"address\": \"Times Square, New York, NY\"\n  },\n  \"dropoff\": {\n    \"latitude\": 40.7589,\n    \"longitude\": -73.9851,\n    \"address\": \"Central Park, New York, NY\"\n  }\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/v1/drivers/estimate-fare",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"v1",
+										"drivers",
+										"estimate-fare"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "📱 Booking Management",
+					"item": [
+						{
+							"name": "Create Booking",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"if (pm.response.code === 201) {",
+											"  const json = pm.response.json();",
+											"  if (json.id) pm.environment.set('bookingId', json.id);",
+											"  if (json.passengerId) pm.environment.set('passengerId', json.passengerId);",
+											"  if (json.passenger && json.passenger.name) pm.environment.set('passengerName', json.passenger.name);",
+											"  if (json.passenger && json.passenger.phone) pm.environment.set('passengerPhone', json.passenger.phone);",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{passengerToken}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"vehicleType\": \"mini\",\n  \"pickup\": {\n    \"latitude\": 40.7128,\n    \"longitude\": -74.0060,\n    \"address\": \"Times Square, New York, NY\"\n  },\n  \"dropoff\": {\n    \"latitude\": 40.7589,\n    \"longitude\": -73.9851,\n    \"address\": \"Central Park, New York, NY\"\n  },\n  \"passengerCount\": 2,\n  \"notes\": \"Please call when you arrive\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/v1/bookings",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"v1",
+										"bookings"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get My Bookings",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test('Response is an array', function () {",
+											"  const json = pm.response.json();",
+											"  pm.expect(json).to.be.an('array');",
+											"});",
+											"pm.test('Each booking includes passenger information', function () {",
+											"  const json = pm.response.json();",
+											"  if (json.length > 0) {",
+											"    json.forEach(booking => {",
+											"      pm.expect(booking).to.have.property('passenger');",
+											"      if (booking.passenger) {",
+											"        pm.expect(booking.passenger).to.have.property('id');",
+											"        pm.expect(booking.passenger).to.have.property('name');",
+											"        pm.expect(booking.passenger).to.have.property('phone');",
+											"      }",
+											"    });",
+											"  }",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{passengerToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/v1/bookings?page=1&limit=10&status=pending",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"v1",
+										"bookings"
+									],
+									"query": [
+										{
+											"key": "page",
+											"value": "1"
+										},
+										{
+											"key": "limit",
+											"value": "10"
+										},
+										{
+											"key": "status",
+											"value": "pending"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Booking Details",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test('Response includes passenger information', function () {",
+											"  const json = pm.response.json();",
+											"  pm.expect(json).to.have.property('passenger');",
+											"  if (json.passenger) {",
+											"    pm.expect(json.passenger).to.have.property('id');",
+											"    pm.expect(json.passenger).to.have.property('name');",
+											"    pm.expect(json.passenger).to.have.property('phone');",
+											"  }",
+											"});",
+											"pm.test('Response includes booking details', function () {",
+											"  const json = pm.response.json();",
+											"  pm.expect(json).to.have.property('id');",
+											"  pm.expect(json).to.have.property('vehicleType');",
+											"  pm.expect(json).to.have.property('pickup');",
+											"  pm.expect(json).to.have.property('dropoff');",
+											"  pm.expect(json).to.have.property('status');",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{passengerToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/v1/bookings/{{bookingId}}",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"v1",
+										"bookings",
+										"{{bookingId}}"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Update Booking",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{passengerToken}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"pickup\": {\n    \"latitude\": 40.7128,\n    \"longitude\": -74.0060,\n    \"address\": \"Updated Times Square, New York, NY\"\n  },\n  \"notes\": \"Updated pickup location\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/v1/bookings/{{bookingId}}",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"v1",
+										"bookings",
+										"{{bookingId}}"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Cancel Booking",
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{passengerToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/v1/bookings/{{bookingId}}",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"v1",
+										"bookings",
+										"{{bookingId}}"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Vehicle Types",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4YzQwYmU1MzA1YjMyOTUyYWJlODNhYiIsInR5cGUiOiJwYXNzZW5nZXIiLCJyb2xlcyI6W10sInBlcm1pc3Npb25zIjpbXSwiaWF0IjoxNzU5MjMxNjA4LCJleHAiOjE3NTk4MzY0MDh9.S8Sw-QwEK0Xe2ZX5bZHg7e4wngikMT-Rt3iv-xz98oM",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{passengerToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/v1/bookings/vehicle/types",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"v1",
+										"bookings",
+										"vehicle",
+										"types"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Debug Authentication",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{passengerToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/v1/bookings/debug/auth",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"v1",
+								"bookings",
+								"debug",
+								"auth"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "All passenger-related endpoints with comprehensive dummy data"
+		},
+		{
+			"name": "🚗 Driver APIs",
+			"item": [
+				{
+					"name": "👤 Driver Management",
+					"item": [
+						{
+							"name": "Set Driver Availability",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{driverToken}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"available\": true,\n  \"vehicleType\": \"mini\",\n  \"maxPassengers\": 4,\n  \"notes\": \"Available for rides in Manhattan area\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/v1/drivers/{{driverId}}/availability",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"v1",
+										"drivers",
+										"{{driverId}}",
+										"availability"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Update Driver Location",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidHlwZSI6ImRyaXZlciIsInJvbGVzIjpbXSwicGVybWlzc2lvbnMiOltdLCJuYW1lIjoidGVzdDEgUmlkZXIiLCJwaG9uZSI6Iis5MTExMTIyMjIiLCJlbWFpbCI6InRlc3QxQGV4YW1wbGUuY29tIiwid2FsbGV0IjoiMC4wMCIsInJhdGluZyI6NSwicmV3YXJkUG9pbnRzIjowLCJhdmFpbGFiaWxpdHkiOnRydWUsInZlcmlmaWNhdGlvbiI6dHJ1ZSwiaWF0IjoxNzU3NjIzMTgwLCJleHAiOjE3NTgyMjc5ODB9.6CFqodQ9bQUP_mYenTBU4vaByt1LYtAaIF-fssWDWNk",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{driverToken}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"latitude\": 40.7128,\n  \"longitude\": -74.0060,\n  \"bearing\": 45.0,\n  \"speed\": 25.5,\n  \"accuracy\": 3.0,\n  \"address\": \"Times Square, New York, NY\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/v1/drivers/{{driverId}}/location",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"v1",
+										"drivers",
+										"{{driverId}}",
+										"location"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "📱 Booking Management",
+					"item": [
+						{
+							"name": "Get Nearby Bookings",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{driverToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/v1/bookings/nearby?latitude=40.7128&longitude=-74.0060&radiusKm=5&vehicleType=mini&limit=20",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"v1",
+										"bookings",
+										"nearby"
+									],
+									"query": [
+										{
+											"key": "latitude",
+											"value": "40.7128"
+										},
+										{
+											"key": "longitude",
+											"value": "-74.0060"
+										},
+										{
+											"key": "radiusKm",
+											"value": "5"
+										},
+										{
+											"key": "vehicleType",
+											"value": "mini"
+										},
+										{
+											"key": "limit",
+											"value": "20"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Accept Booking",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{driverToken}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"status\": \"accepted\",\n  \"estimatedArrival\": \"2024-01-15T14:15:00Z\",\n  \"notes\": \"On my way to pickup location\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/v1/bookings/{{bookingId}}/lifecycle",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"v1",
+										"bookings",
+										"{{bookingId}}",
+										"lifecycle"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Start Trip",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{driverToken}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"status\": \"ongoing\",\n  \"actualPickupTime\": \"2024-01-15T14:20:00Z\",\n  \"notes\": \"Passenger picked up, starting trip\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/v1/bookings/{{bookingId}}/lifecycle",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"v1",
+										"bookings",
+										"{{bookingId}}",
+										"lifecycle"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Complete Trip",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{driverToken}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"status\": \"completed\",\n  \"actualDropoffTime\": \"2024-01-15T14:45:00Z\",\n  \"fare\": 25.50,\n  \"notes\": \"Trip completed successfully\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/v1/bookings/{{bookingId}}/lifecycle",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"v1",
+										"bookings",
+										"{{bookingId}}",
+										"lifecycle"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Driver Earnings",
+					"item": [
+						{
+							"name": "Get My Earnings (Daily)",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{driverToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/v1/analytics/earnings/driver?period=daily",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"v1",
+										"analytics",
+										"earnings",
+										"driver"
+									],
+									"query": [
+										{
+											"key": "period",
+											"value": "daily"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get My Earnings (Weekly)",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{driverToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/v1/analytics/earnings/driver?period=weekly",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"v1",
+										"analytics",
+										"earnings",
+										"driver"
+									],
+									"query": [
+										{
+											"key": "period",
+											"value": "weekly"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get My Earnings (Monthly)",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{driverToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/v1/analytics/earnings/driver?period=monthly",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"v1",
+										"analytics",
+										"earnings",
+										"driver"
+									],
+									"query": [
+										{
+											"key": "period",
+											"value": "monthly"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Driver Ride History",
+					"item": [
+						{
+							"name": "Get My Ride History",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{driverToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/v1/analytics/rides/history?page=1&limit=10",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"v1",
+										"analytics",
+										"rides",
+										"history"
+									],
+									"query": [
+										{
+											"key": "page",
+											"value": "1"
+										},
+										{
+											"key": "limit",
+											"value": "10"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Live (Position Updates)",
+					"item": [
+						{
+							"name": "Driver Push Current Position",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{driverToken}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"latitude\": 8.98,\n  \"longitude\": 38.79,\n//   \"status\": \"ongoing\",\n  \"locationType\": \"current\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/live/push",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"live",
+										"push"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Driver Push Position During Trip",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{driverToken}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"latitude\": 8.985,\n  \"longitude\": 38.795,\n  \"status\": \"ongoing\",\n  \"locationType\": \"current\",\n  \"tripId\": \"{{tripId}}\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/v1/live/push",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"v1",
+										"live",
+										"push"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "wallet and payment related",
+					"item": [
+						{
+							"name": "Driver View Wallet",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{driverToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/v1/drivers/{{driverId}}/wallet",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"v1",
+										"drivers",
+										"{{driverId}}",
+										"wallet"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Driver Wallet Transactions",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MiwidHlwZSI6ImRyaXZlciIsInBheW1lbnRQcmVmZXJlbmNlIjpudWxsLCJuYW1lIjoiQWJlbCBEZXNhbGVnbiIsInBob25lIjoiKzI1MTk0MTg5Mzk5MyIsImVtYWlsIjoiYWJlbGRlc2FsZWduQGdtYWlsLmNvbSIsInN0YXR1cyI6ImFwcHJvdmVkIiwiZG9jdW1lbnRTdGF0dXMiOiJhcHByb3ZlZCIsInZlaGljbGVUeXBlIjoibWluaSIsImNhck5hbWUiOiJjb3JvbGxhIiwiaWF0IjoxNzU4NzEyOTI4LCJleHAiOjE3NTkzMTc3Mjh9.If3_ABhhwhF-FZVhyRPXfQ24sWWNmcqUT0PfrJw38-Y",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{driverToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/v1/drivers/{{driverId}}/wallet/transactions",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"v1",
+										"drivers",
+										"{{driverId}}",
+										"wallet",
+										"transactions"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Set Driver Payment Preference",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MywiZHJpdmVySWQiOjMsInR5cGUiOiJkcml2ZXIiLCJwYXltZW50UHJlZmVyZW5jZSI6bnVsbCwibmFtZSI6ImRyaXZlciAxIiwicGhvbmUiOiIrMjUxOTE1MzA3MDA5IiwiZW1haWwiOiJiZWZraWVAZ21haWwuY29tIiwic3RhdHVzIjoiYXBwcm92ZWQiLCJkb2N1bWVudFN0YXR1cyI6ImFwcHJvdmVkIiwidmVoaWNsZVR5cGUiOiJtaW5pIiwiY2FyTmFtZSI6ImNvcm9sbGEiLCJjYXJQbGF0ZSI6IkFCQzEyMyIsImlhdCI6MTc1OTE3OTM3MSwiZXhwIjoxNzU5Nzg0MTcxfQ.yo3WBCVA6KaysoNTMDSCCHzBCYIYwY6m8ys6GMMEz9Q",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{driverToken}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"disabled": true
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"paymentOptionId\": \"68d2fcfc69b6c63bea3596dd\",\n  \"driverId\":\"3\"\n}\n",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/v1/driver/payment-preference",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"v1",
+										"driver",
+										"payment-preference"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Topup Wallet (SantimPay DirectPayment)",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{passengerToken}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"amount\": 1,\n  \"phoneNumber\": \"251941893993\",\n  \"paymentMethod\": \"Telebirr\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/v1/wallet/topup",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"v1",
+										"wallet",
+										"topup"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "List Payment Options (auth)",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{driverToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/v1/payment-options",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"v1",
+										"payment-options"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			],
+			"description": "All driver-related endpoints with comprehensive dummy data"
+		},
+		{
+			"name": "👨‍💼 Admin/Staff APIs",
+			"item": [
+				{
+					"name": "👥 User Management",
+					"item": [
+						{
+							"name": "Passenger Management",
+							"item": [
+								{
+									"name": "Create Passenger (Admin)",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"if (pm.response.code === 201) {",
+													"  const json = pm.response.json();",
+													"  if (json._id) pm.environment.set('passengerId', json._id);",
+													"  if (json.name) pm.environment.set('passengerName', json.name);",
+													"}"
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "Authorization",
+												"value": "Bearer {{adminToken}}"
+											},
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n  \"name\": \"Alice Johnson\",\n  \"phone\": \"1234567893\",\n  \"email\": \"alice.johnson@example.com\",\n  \"password\": \"SecurePass123!\",\n  \"emergencyContacts\": [\n    {\n      \"name\": \"Bob Johnson\",\n      \"phone\": \"1234567894\",\n      \"relationship\": \"Husband\"\n    }\n  ]\n}"
+										},
+										"url": {
+											"raw": "{{baseUrl}}/v1/passengers",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"v1",
+												"passengers"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "List All Passengers",
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Authorization",
+												"value": "Bearer {{adminToken}}"
+											}
+										],
+										"url": {
+											"raw": "{{baseUrl}}/v1/passengers?page=1&limit=20&status=active",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"v1",
+												"passengers"
+											],
+											"query": [
+												{
+													"key": "page",
+													"value": "1"
+												},
+												{
+													"key": "limit",
+													"value": "20"
+												},
+												{
+													"key": "status",
+													"value": "active"
+												}
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Get Passenger Details",
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Authorization",
+												"value": "Bearer {{adminToken}}"
+											}
+										],
+										"url": {
+											"raw": "{{baseUrl}}/v1/passengers/{{passengerId}}",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"v1",
+												"passengers",
+												"{{passengerId}}"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Update Passenger",
+									"request": {
+										"method": "PUT",
+										"header": [
+											{
+												"key": "Authorization",
+												"value": "Bearer {{adminToken}}"
+											},
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n  \"name\": \"Alice Johnson-Smith\",\n  \"email\": \"alice.smith@example.com\",\n  \"status\": \"active\",\n  \"notes\": \"VIP customer - frequent rider\"\n}"
+										},
+										"url": {
+											"raw": "{{baseUrl}}/v1/passengers/{{passengerId}}",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"v1",
+												"passengers",
+												"{{passengerId}}"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Delete Passenger",
+									"request": {
+										"method": "DELETE",
+										"header": [
+											{
+												"key": "Authorization",
+												"value": "Bearer {{adminToken}}"
+											}
+										],
+										"url": {
+											"raw": "{{baseUrl}}/v1/passengers/{{passengerId}}",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"v1",
+												"passengers",
+												"{{passengerId}}"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						},
+						{
+							"name": "Driver Management",
+							"item": [
+								{
+									"name": "List All Drivers",
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Authorization",
+												"value": "Bearer {{adminToken}}"
+											}
+										],
+										"url": {
+											"raw": "{{baseUrl}}/v1/drivers?page=1&limit=20&status=active",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"v1",
+												"drivers"
+											],
+											"query": [
+												{
+													"key": "page",
+													"value": "1"
+												},
+												{
+													"key": "limit",
+													"value": "20"
+												},
+												{
+													"key": "status",
+													"value": "active"
+												}
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Get Driver Details",
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Authorization",
+												"value": "Bearer {{adminToken}}"
+											}
+										],
+										"url": {
+											"raw": "{{baseUrl}}/v1/drivers/{{driverId}}",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"v1",
+												"drivers",
+												"{{driverId}}"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						}
+					]
+				},
+				{
+					"name": "📋 Booking & Trip Management",
+					"item": [
+						{
+							"name": "Booking Management",
+							"item": [
+								{
+									"name": "List All Bookings",
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Authorization",
+												"value": "Bearer {{adminToken}}"
+											}
+										],
+										"url": {
+											"raw": "{{baseUrl}}/v1/bookings?page=1&limit=20&status=pending",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"v1",
+												"bookings"
+											],
+											"query": [
+												{
+													"key": "page",
+													"value": "1"
+												},
+												{
+													"key": "limit",
+													"value": "20"
+												},
+												{
+													"key": "status",
+													"value": "pending"
+												}
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Admin Estimate Fare",
+									"request": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "Authorization",
+												"value": "Bearer {{adminToken}}"
+											},
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n  \"vehicleType\": \"sedan\",\n  \"pickup\": {\n    \"latitude\": 40.7128,\n    \"longitude\": -74.0060,\n    \"address\": \"Times Square, New York, NY\"\n  },\n  \"dropoff\": {\n    \"latitude\": 40.7589,\n    \"longitude\": -73.9851,\n    \"address\": \"Central Park, New York, NY\"\n  }\n}"
+										},
+										"url": {
+											"raw": "{{baseUrl}}/v1/bookings/estimate",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"v1",
+												"bookings",
+												"estimate"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Assign Booking to Driver",
+									"request": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "Authorization",
+												"value": "Bearer {{adminToken}}"
+											},
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n  \"driverId\": \"{{driverId}}\",\n  \"dispatcherId\": \"{{adminId}}\",\n  \"passengerId\": \"{{passengerId}}\",\n  \"notes\": \"Assigned by dispatcher - high priority\"\n}"
+										},
+										"url": {
+											"raw": "{{baseUrl}}/v1/bookings/{{bookingId}}/assign",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"v1",
+												"bookings",
+												"{{bookingId}}",
+												"assign"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Update Booking Status - Canceled",
+									"request": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "Authorization",
+												"value": "Bearer {{adminToken}}"
+											},
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n  \"status\": \"canceled\",\n  \"reason\": \"Passenger no-show\",\n  \"notes\": \"Canceled by admin due to passenger no-show\"\n}"
+										},
+										"url": {
+											"raw": "{{baseUrl}}/v1/bookings/{{bookingId}}/lifecycle",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"v1",
+												"bookings",
+												"{{bookingId}}",
+												"lifecycle"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						},
+						{
+							"name": "Assignment Management",
+							"item": [
+								{
+									"name": "Create Assignment",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"if (pm.response.code === 201) {",
+													"  const json = pm.response.json();",
+													"  if (json._id) pm.environment.set('assignmentId', json._id);",
+													"}"
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "Authorization",
+												"value": "Bearer {{adminToken}}"
+											},
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n  \"bookingId\": \"{{bookingId}}\",\n  \"driverId\": \"{{driverId}}\",\n  \"dispatcherId\": \"{{adminId}}\",\n  \"priority\": \"high\",\n  \"notes\": \"VIP customer - expedite assignment\"\n}"
+										},
+										"url": {
+											"raw": "{{baseUrl}}/v1/assignments",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"v1",
+												"assignments"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "List All Assignments",
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Authorization",
+												"value": "Bearer {{adminToken}}"
+											}
+										],
+										"url": {
+											"raw": "{{baseUrl}}/v1/assignments?page=1&limit=20&status=active",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"v1",
+												"assignments"
+											],
+											"query": [
+												{
+													"key": "page",
+													"value": "1"
+												},
+												{
+													"key": "limit",
+													"value": "20"
+												},
+												{
+													"key": "status",
+													"value": "active"
+												}
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Get Assignment Details",
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Authorization",
+												"value": "Bearer {{adminToken}}"
+											}
+										],
+										"url": {
+											"raw": "{{baseUrl}}/v1/assignments/{{assignmentId}}",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"v1",
+												"assignments",
+												"{{assignmentId}}"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Update Assignment",
+									"request": {
+										"method": "PUT",
+										"header": [
+											{
+												"key": "Authorization",
+												"value": "Bearer {{adminToken}}"
+											},
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n  \"status\": \"completed\",\n  \"notes\": \"Assignment completed successfully\"\n}"
+										},
+										"url": {
+											"raw": "{{baseUrl}}/v1/assignments/{{assignmentId}}",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"v1",
+												"assignments",
+												"{{assignmentId}}"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Delete Assignment",
+									"request": {
+										"method": "DELETE",
+										"header": [
+											{
+												"key": "Authorization",
+												"value": "Bearer {{adminToken}}"
+											}
+										],
+										"url": {
+											"raw": "{{baseUrl}}/v1/assignments/{{assignmentId}}",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"v1",
+												"assignments",
+												"{{assignmentId}}"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						},
+						{
+							"name": "Trip Management",
+							"item": [
+								{
+									"name": "Create Trip History",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"if (pm.response.code === 201) {",
+													"  const json = pm.response.json();",
+													"  if (json._id) pm.environment.set('tripId', json._id);",
+													"}"
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "Authorization",
+												"value": "Bearer {{adminToken}}"
+											},
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n  \"bookingId\": \"{{bookingId}}\",\n  \"driverId\": \"{{driverId}}\",\n  \"passengerId\": \"{{passengerId}}\",\n  \"status\": \"completed\",\n  \"fare\": 25.50,\n  \"distance\": 5.2,\n  \"duration\": 18,\n  \"pickupLocation\": {\n    \"latitude\": 40.7128,\n    \"longitude\": -74.0060,\n    \"address\": \"Times Square, New York, NY\"\n  },\n  \"dropoffLocation\": {\n    \"latitude\": 40.7589,\n    \"longitude\": -73.9851,\n    \"address\": \"Central Park, New York, NY\"\n  },\n  \"startTime\": \"2024-01-15T14:20:00Z\",\n  \"endTime\": \"2024-01-15T14:45:00Z\",\n  \"notes\": \"Smooth trip, no issues\"\n}"
+										},
+										"url": {
+											"raw": "{{baseUrl}}/v1/trips",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"v1",
+												"trips"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "List All Trips",
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Authorization",
+												"value": "Bearer {{adminToken}}"
+											}
+										],
+										"url": {
+											"raw": "{{baseUrl}}/v1/trips?page=1&limit=20&status=completed",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"v1",
+												"trips"
+											],
+											"query": [
+												{
+													"key": "page",
+													"value": "1"
+												},
+												{
+													"key": "limit",
+													"value": "20"
+												},
+												{
+													"key": "status",
+													"value": "completed"
+												}
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Get Trip Details",
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Authorization",
+												"value": "Bearer {{adminToken}}"
+											}
+										],
+										"url": {
+											"raw": "{{baseUrl}}/v1/trips/{{tripId}}",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"v1",
+												"trips",
+												"{{tripId}}"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Update Trip History",
+									"request": {
+										"method": "PUT",
+										"header": [
+											{
+												"key": "Authorization",
+												"value": "Bearer {{adminToken}}"
+											},
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n  \"notes\": \"Updated by admin - driver feedback: excellent service\",\n  \"fare\": 26.00\n}"
+										},
+										"url": {
+											"raw": "{{baseUrl}}/v1/trips/{{tripId}}",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"v1",
+												"trips",
+												"{{tripId}}"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Delete Trip History",
+									"request": {
+										"method": "DELETE",
+										"header": [
+											{
+												"key": "Authorization",
+												"value": "Bearer {{adminToken}}"
+											}
+										],
+										"url": {
+											"raw": "{{baseUrl}}/v1/trips/{{tripId}}",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"v1",
+												"trips",
+												"{{tripId}}"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						}
+					]
+				},
+				{
+					"name": "💰 Pricing Management",
+					"item": [
+						{
+							"name": "Create Pricing - Mini",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"if (pm.response.code === 201) {",
+											"  const json = pm.response.json();",
+											"  if (json._id) pm.environment.set('pricingId', json._id);",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{adminToken}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"vehicleType\": \"mini\",\n  \"baseFare\": 2.50,\n  \"perKm\": 1.20,\n  \"perMinute\": 0.25,\n  \"waitingPerMinute\": 0.15,\n  \"surgeMultiplier\": 1.0,\n  \"minimumFare\": 5.00,\n  \"maximumFare\": 100.00,\n  \"active\": true,\n  \"description\": \"Standard pricing for mini vehicles\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/v1/pricing",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"v1",
+										"pricing"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "List All Pricing",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{adminToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/v1/pricing?active=true",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"v1",
+										"pricing"
+									],
+									"query": [
+										{
+											"key": "active",
+											"value": "true"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Pricing Details",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{adminToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/v1/pricing/{{pricingId}}",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"v1",
+										"pricing",
+										"{{pricingId}}"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Update Pricing (Broadcast)",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{adminToken}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"surgeMultiplier\": 1.5,\n  \"description\": \"Updated pricing with surge multiplier for peak hours\",\n  \"effectiveFrom\": \"2024-01-15T17:00:00Z\",\n  \"effectiveTo\": \"2024-01-15T19:00:00Z\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/v1/pricing/{{pricingId}}",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"v1",
+										"pricing",
+										"{{pricingId}}"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Delete Pricing",
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{adminToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/v1/pricing/{{pricingId}}",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"v1",
+										"pricing",
+										"{{pricingId}}"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "📊 Analytics & Reports",
+					"item": [
+						{
+							"name": "Commission Management",
+							"item": [
+								{
+									"name": "Get Current Commission Rate",
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Authorization",
+												"value": "Bearer {{adminToken}}"
+											}
+										],
+										"url": {
+											"raw": "{{baseUrl}}/v1/analytics/commission",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"v1",
+												"analytics",
+												"commission"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Set Commission Rate",
+									"request": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "Authorization",
+												"value": "Bearer {{adminToken}}"
+											},
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n  \"percentage\": 15.0,\n  \"description\": \"Standard commission rate for all rides\",\n  \"effectiveFrom\": \"2024-01-15T00:00:00Z\",\n  \"vehicleType\": \"all\"\n}"
+										},
+										"url": {
+											"raw": "{{baseUrl}}/v1/analytics/commission",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"v1",
+												"analytics",
+												"commission"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						},
+						{
+							"name": "Driver Earnings Management",
+							"item": [
+								{
+									"name": "Get Driver Earnings",
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Authorization",
+												"value": "Bearer {{adminToken}}"
+											}
+										],
+										"url": {
+											"raw": "{{baseUrl}}/v1/analytics/earnings/driver?driverId={{driverId}}&period=monthly&month=2024-01",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"v1",
+												"analytics",
+												"earnings",
+												"driver"
+											],
+											"query": [
+												{
+													"key": "driverId",
+													"value": "{{driverId}}"
+												},
+												{
+													"key": "period",
+													"value": "monthly"
+												},
+												{
+													"key": "month",
+													"value": "2024-01"
+												}
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						},
+						{
+							"name": "Ride History Management",
+							"item": [
+								{
+									"name": "Get All Ride History",
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Authorization",
+												"value": "Bearer {{adminToken}}"
+											}
+										],
+										"url": {
+											"raw": "{{baseUrl}}/v1/analytics/rides/history?page=1&limit=50&status=completed&dateFrom=2024-01-01&dateTo=2024-01-31",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"v1",
+												"analytics",
+												"rides",
+												"history"
+											],
+											"query": [
+												{
+													"key": "page",
+													"value": "1"
+												},
+												{
+													"key": "limit",
+													"value": "50"
+												},
+												{
+													"key": "status",
+													"value": "completed"
+												},
+												{
+													"key": "dateFrom",
+													"value": "2024-01-01"
+												},
+												{
+													"key": "dateTo",
+													"value": "2024-01-31"
+												}
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						},
+						{
+							"name": "New Folder",
+							"item": [
+								{
+									"name": "Dashboard Statistics",
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Authorization",
+												"value": "Bearer {{adminToken}}"
+											}
+										],
+										"url": {
+											"raw": "{{baseUrl}}/v1/analytics/dashboard?period=today",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"v1",
+												"analytics",
+												"dashboard"
+											],
+											"query": [
+												{
+													"key": "period",
+													"value": "today"
+												}
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Report",
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Authorization",
+												"value": "Bearer {{adminToken}}"
+											}
+										],
+										"url": {
+											"raw": "{{baseUrl}}/v1/analytics/reports/weekly?week=2024-W03",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"v1",
+												"analytics",
+												"reports",
+												"weekly"
+											],
+											"query": [
+												{
+													"key": "week",
+													"value": "2024-W03"
+												}
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Finance Overview",
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Authorization",
+												"value": "Bearer {{adminToken}}"
+											}
+										],
+										"url": {
+											"raw": "{{baseUrl}}/v1/analytics/finance/overview?period=monthly&month=2024-01",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"v1",
+												"analytics",
+												"finance",
+												"overview"
+											],
+											"query": [
+												{
+													"key": "period",
+													"value": "monthly"
+												},
+												{
+													"key": "month",
+													"value": "2024-01"
+												}
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						}
+					]
+				},
+				{
+					"name": "📍 Live Updates Management",
+					"item": [
+						{
+							"name": "List Live Updates (Admin)",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{adminToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/v1/live?page=1&limit=20&status=active",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"v1",
+										"live"
+									],
+									"query": [
+										{
+											"key": "page",
+											"value": "1"
+										},
+										{
+											"key": "limit",
+											"value": "20"
+										},
+										{
+											"key": "status",
+											"value": "active"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Live Update Details (Admin)",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{adminToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/v1/live/{{liveId}}",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"v1",
+										"live",
+										"{{liveId}}"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "payment and wallet related admin side",
+					"item": [
+						{
+							"name": "🏦 Payment Options",
+							"item": [
+								{
+									"name": "Create Payment Option (Admin)",
+									"request": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "Authorization",
+												"value": "Bearer {{adminToken}}"
+											},
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n  \"name\": \"New Payment Service\",\n  \"logo\": \"https://cdn.app/logos/new-service.png\"\n}"
+										},
+										"url": {
+											"raw": "{{baseUrl}}/v1/payment-options",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"v1",
+												"payment-options"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Get Payment Option (auth)",
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Authorization",
+												"value": "Bearer {{driverToken}}"
+											}
+										],
+										"url": {
+											"raw": "{{baseUrl}}/v1/payment-options/{{paymentOptionId}}",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"v1",
+												"payment-options",
+												"{{paymentOptionId}}"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Update Payment Option (Admin)",
+									"request": {
+										"method": "PUT",
+										"header": [
+											{
+												"key": "Authorization",
+												"value": "Bearer {{adminToken}}"
+											},
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n  \"name\": \"New Payment Service\",\n  \"logo\": \"https://cdn.app/logos/new-service.png\"\n}"
+										},
+										"url": {
+											"raw": "{{baseUrl}}/v1/payment-options/{{paymentOptionId}}",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"v1",
+												"payment-options",
+												"{{paymentOptionId}}"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Delete Payment Option (Admin)",
+									"request": {
+										"method": "DELETE",
+										"header": [
+											{
+												"key": "Authorization",
+												"value": "Bearer {{adminToken}}"
+											}
+										],
+										"url": {
+											"raw": "{{baseUrl}}/v1/payment-options/{{paymentOptionId}}",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"v1",
+												"payment-options",
+												"{{paymentOptionId}}"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						},
+						{
+							"name": "Admin List Driver Wallets",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{adminToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/v1/wallet/admin/wallets?page=1&pageSize=20",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"v1",
+										"wallet",
+										"admin",
+										"wallets"
+									],
+									"query": [
+										{
+											"key": "page",
+											"value": "1"
+										},
+										{
+											"key": "pageSize",
+											"value": "20"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Admin Get Driver Wallet",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{adminToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/v1/wallet/admin/wallets/{{driverId}}?limit=100",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"v1",
+										"wallet",
+										"admin",
+										"wallets",
+										"{{driverId}}"
+									],
+									"query": [
+										{
+											"key": "limit",
+											"value": "100"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			],
+			"description": "All admin and staff management endpoints with comprehensive dummy data"
+		},
+		{
+			"name": "💳 Wallet",
+			"item": [
+				{
+					"name": "Passenger",
+					"item": [
+						{
+							"name": "Wallet Transactions",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{passengerToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/v1/wallet/transactions/{{passengerId}}",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"v1",
+										"wallet",
+										"transactions",
+										"{{passengerId}}"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Webhooks",
+					"item": [
+						{
+							"name": "SantimPay Webhook (Callback)",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"ID\": \"{{transactionId}}\",\n  \"Status\": \"SUCCESS\",\n  \"TxnId\": \"TX123\",\n  \"RefId\": \"REF123\",\n  \"Commission\": 1.5,\n  \"TotalAmount\": 101.5,\n  \"Msisdn\": \"2519XXXXXXX\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/v1/wallet/webhook",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"v1",
+										"wallet",
+										"webhook"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseurl",
+			"value": ""
+		}
+	]
+=======
+  "info": {
+    "name": "Ride Service API - Updated",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        { "name": "Passenger Register", "request": { "method": "POST", "url": "{{baseUrl}}/v1/auth/passenger/register" } },
+        { "name": "Passenger Login", "request": { "method": "POST", "url": "{{baseUrl}}/v1/auth/passenger/login" } },
+        { "name": "Staff Login", "request": { "method": "POST", "url": "{{baseUrl}}/v1/auth/staff/login" } },
+        { "name": "Admin Login", "request": { "method": "POST", "url": "{{baseUrl}}/v1/auth/admin/login" } }
+      ]
+    },
+    {
+      "name": "Bookings",
+      "item": [
+        { "name": "Create (Passenger)", "request": { "method": "POST", "url": "{{baseUrl}}/v1/bookings" } },
+        { "name": "Create (Admin)", "request": { "method": "POST", "url": "{{baseUrl}}/v1/bookings/admin" } },
+        { "name": "List", "request": { "method": "GET", "url": "{{baseUrl}}/v1/bookings" } },
+        { "name": "Nearby", "request": { "method": "GET", "url": "{{baseUrl}}/v1/bookings/nearby?latitude={{lat}}&longitude={{lng}}&radiusKm=5" } },
+        { "name": "Get", "request": { "method": "GET", "url": "{{baseUrl}}/v1/bookings/{{bookingId}}" } },
+        { "name": "Update", "request": { "method": "PUT", "url": "{{baseUrl}}/v1/bookings/{{bookingId}}" } },
+        { "name": "Delete", "request": { "method": "DELETE", "url": "{{baseUrl}}/v1/bookings/{{bookingId}}" } },
+        { "name": "Lifecycle", "request": { "method": "POST", "url": "{{baseUrl}}/v1/bookings/{{bookingId}}/lifecycle" } },
+        { "name": "Assign (Admin)", "request": { "method": "POST", "url": "{{baseUrl}}/v1/bookings/{{bookingId}}/assign" } },
+        { "name": "Estimate (Admin)", "request": { "method": "POST", "url": "{{baseUrl}}/v1/bookings/estimate" } },
+        { "name": "Rate Passenger (Driver)", "request": { "method": "POST", "url": "{{baseUrl}}/v1/bookings/{{bookingId}}/rate-passenger" } },
+        { "name": "Rate Driver (Passenger)", "request": { "method": "POST", "url": "{{baseUrl}}/v1/bookings/{{bookingId}}/rate-driver" } }
+      ]
+    },
+    {
+      "name": "Assignments (Admin/Staff)",
+      "item": [
+        { "name": "Create", "request": { "method": "POST", "url": "{{baseUrl}}/v1/assignments" } },
+        { "name": "List", "request": { "method": "GET", "url": "{{baseUrl}}/v1/assignments" } },
+        { "name": "Get", "request": { "method": "GET", "url": "{{baseUrl}}/v1/assignments/{{assignmentId}}" } },
+        { "name": "Update", "request": { "method": "PUT", "url": "{{baseUrl}}/v1/assignments/{{assignmentId}}" } },
+        { "name": "Delete", "request": { "method": "DELETE", "url": "{{baseUrl}}/v1/assignments/{{assignmentId}}" } }
+      ]
+    },
+    {
+      "name": "Trips",
+      "item": [
+        { "name": "List", "request": { "method": "GET", "url": "{{baseUrl}}/v1/trips" } },
+        { "name": "Get", "request": { "method": "GET", "url": "{{baseUrl}}/v1/trips/{{tripId}}" } },
+        { "name": "Delete (Admin/Staff)", "request": { "method": "DELETE", "url": "{{baseUrl}}/v1/trips/{{tripId}}" } }
+      ]
+    },
+    {
+      "name": "Pricing (Admin)",
+      "item": [
+        { "name": "Create", "request": { "method": "POST", "url": "{{baseUrl}}/v1/pricing" } },
+        { "name": "List", "request": { "method": "GET", "url": "{{baseUrl}}/v1/pricing" } },
+        { "name": "Get (by Id or latest)", "request": { "method": "GET", "url": "{{baseUrl}}/v1/pricing/{{pricingIdOrLatest}}" } },
+        { "name": "Update + Broadcast", "request": { "method": "PUT", "url": "{{baseUrl}}/v1/pricing/{{pricingId}}" } },
+        { "name": "Recalculate by Booking", "request": { "method": "POST", "url": "{{baseUrl}}/v1/pricing/recalculate" } },
+        { "name": "Delete", "request": { "method": "DELETE", "url": "{{baseUrl}}/v1/pricing/{{pricingId}}" } }
+      ]
+    },
+    {
+      "name": "Drivers",
+      "item": [
+        { "name": "List (Admin/Staff)", "request": { "method": "GET", "url": "{{baseUrl}}/v1/drivers" } },
+        { "name": "Available Nearby", "request": { "method": "GET", "url": "{{baseUrl}}/v1/drivers/available?latitude={{lat}}&longitude={{lng}}" } },
+        { "name": "Get (Admin/Staff)", "request": { "method": "GET", "url": "{{baseUrl}}/v1/drivers/{{driverId}}" } },
+        { "name": "Set Availability (Driver)", "request": { "method": "POST", "url": "{{baseUrl}}/v1/drivers/{{driverId}}/availability" } },
+        { "name": "Update Location (Driver)", "request": { "method": "POST", "url": "{{baseUrl}}/v1/drivers/{{driverId}}/location" } },
+        { "name": "Wallet", "request": { "method": "GET", "url": "{{baseUrl}}/v1/drivers/{{driverId}}/wallet" } },
+        { "name": "Wallet Transactions", "request": { "method": "GET", "url": "{{baseUrl}}/v1/drivers/{{driverId}}/wallet/transactions" } },
+        { "name": "Withdraw", "request": { "method": "POST", "url": "{{baseUrl}}/v1/drivers/{{driverId}}/wallet/withdraw" } },
+        { "name": "Adjust Balance (Admin)", "request": { "method": "POST", "url": "{{baseUrl}}/v1/drivers/{{driverId}}/wallet/adjust" } },
+        { "name": "Estimate Fare (Passenger)", "request": { "method": "POST", "url": "{{baseUrl}}/v1/drivers/estimate-fare" } },
+        { "name": "Estimate Fare for Booking (Driver)", "request": { "method": "GET", "url": "{{baseUrl}}/v1/drivers/estimate-fare/{{bookingId}}" } },
+        { "name": "Discover and Estimate", "request": { "method": "POST", "url": "{{baseUrl}}/v1/drivers/discover-and-estimate" } },
+        { "name": "Payment Options", "request": { "method": "GET", "url": "{{baseUrl}}/v1/drivers/payment-options" } },
+        { "name": "Set Payment Preference", "request": { "method": "POST", "url": "{{baseUrl}}/v1/drivers/payment-preference" } }
+      ]
+    },
+    {
+      "name": "Passengers",
+      "item": [
+        { "name": "List (Admin/Staff)", "request": { "method": "GET", "url": "{{baseUrl}}/v1/passengers" } },
+        { "name": "Create (Admin/Staff)", "request": { "method": "POST", "url": "{{baseUrl}}/v1/passengers" } },
+        { "name": "Get (Admin/Staff)", "request": { "method": "GET", "url": "{{baseUrl}}/v1/passengers/{{passengerId}}" } },
+        { "name": "Update (Admin/Staff)", "request": { "method": "PUT", "url": "{{baseUrl}}/v1/passengers/{{passengerId}}" } },
+        { "name": "Delete (Admin/Staff)", "request": { "method": "DELETE", "url": "{{baseUrl}}/v1/passengers/{{passengerId}}" } },
+        { "name": "Me - Profile", "request": { "method": "GET", "url": "{{baseUrl}}/v1/passengers/me/profile" } },
+        { "name": "Me - Update Profile", "request": { "method": "PUT", "url": "{{baseUrl}}/v1/passengers/me/profile" } },
+        { "name": "Me - Delete Account", "request": { "method": "DELETE", "url": "{{baseUrl}}/v1/passengers/me" } },
+        { "name": "Rate Driver", "request": { "method": "POST", "url": "{{baseUrl}}/v1/passengers/drivers/{{driverId}}/rate" } }
+      ]
+    },
+    {
+      "name": "Analytics (Admin)",
+      "item": [
+        { "name": "Dashboard", "request": { "method": "GET", "url": "{{baseUrl}}/v1/analytics/dashboard" } },
+        { "name": "Daily Report", "request": { "method": "GET", "url": "{{baseUrl}}/v1/analytics/reports/daily" } },
+        { "name": "Weekly Report", "request": { "method": "GET", "url": "{{baseUrl}}/v1/analytics/reports/weekly" } },
+        { "name": "Monthly Report", "request": { "method": "GET", "url": "{{baseUrl}}/v1/analytics/reports/monthly" } },
+        { "name": "Driver Earnings", "request": { "method": "GET", "url": "{{baseUrl}}/v1/analytics/earnings/driver" } },
+        { "name": "Set Commission", "request": { "method": "POST", "url": "{{baseUrl}}/v1/analytics/commission" } },
+        { "name": "Get Commission", "request": { "method": "GET", "url": "{{baseUrl}}/v1/analytics/commission" } },
+        { "name": "Ride History", "request": { "method": "GET", "url": "{{baseUrl}}/v1/analytics/rides/history" } },
+        { "name": "Trips History by User", "request": { "method": "GET", "url": "{{baseUrl}}/v1/analytics/trips/history/{{userType}}/{{userId}}" } },
+        { "name": "Finance Overview", "request": { "method": "GET", "url": "{{baseUrl}}/v1/analytics/finance/overview" } },
+        { "name": "Rewards (Passenger)", "request": { "method": "GET", "url": "{{baseUrl}}/v1/analytics/rewards/passenger" } },
+        { "name": "Rewards (Driver)", "request": { "method": "GET", "url": "{{baseUrl}}/v1/analytics/rewards/driver" } }
+      ]
+    },
+    {
+      "name": "Live",
+      "item": [
+        { "name": "Create", "request": { "method": "POST", "url": "{{baseUrl}}/v1/live" } },
+        { "name": "List", "request": { "method": "GET", "url": "{{baseUrl}}/v1/live" } },
+        { "name": "Get", "request": { "method": "GET", "url": "{{baseUrl}}/v1/live/{{liveId}}" } },
+        { "name": "Update", "request": { "method": "PUT", "url": "{{baseUrl}}/v1/live/{{liveId}}" } },
+        { "name": "Delete", "request": { "method": "DELETE", "url": "{{baseUrl}}/v1/live/{{liveId}}" } },
+        { "name": "Push (Driver/Passenger)", "request": { "method": "POST", "url": "{{baseUrl}}/v1/live/push" } }
+      ]
+    },
+    {
+      "name": "Mapping",
+      "item": [
+        { "name": "Route", "request": { "method": "POST", "url": "{{baseUrl}}/v1/mapping/route" } },
+        { "name": "ETA", "request": { "method": "POST", "url": "{{baseUrl}}/v1/mapping/eta" } },
+        { "name": "Booking Progress", "request": { "method": "GET", "url": "{{baseUrl}}/v1/mapping/booking/{{bookingId}}/progress" } }
+      ]
+    },
+    {
+      "name": "Wallet",
+      "item": [
+        { "name": "Topup", "request": { "method": "POST", "url": "{{baseUrl}}/v1/wallet/topup" } },
+        { "name": "Transactions (me)", "request": { "method": "GET", "url": "{{baseUrl}}/v1/wallet/transactions" } },
+        { "name": "Transactions (by user)", "request": { "method": "GET", "url": "{{baseUrl}}/v1/wallet/transactions/{{userId}}" } },
+        { "name": "Withdraw (Driver)", "request": { "method": "POST", "url": "{{baseUrl}}/v1/wallet/withdraw" } }
+      ]
+    },
+    {
+      "name": "Payment Options",
+      "item": [
+        { "name": "Create", "request": { "method": "POST", "url": "{{baseUrl}}/v1/payment" } },
+        { "name": "List", "request": { "method": "GET", "url": "{{baseUrl}}/v1/payment" } },
+        { "name": "Get", "request": { "method": "GET", "url": "{{baseUrl}}/v1/payment/{{paymentId}}" } },
+        { "name": "Update", "request": { "method": "PUT", "url": "{{baseUrl}}/v1/payment/{{paymentId}}" } },
+        { "name": "Delete", "request": { "method": "DELETE", "url": "{{baseUrl}}/v1/payment/{{paymentId}}" } }
+      ]
+    },
+    {
+      "name": "Admins (Admin)",
+      "item": [
+        { "name": "List", "request": { "method": "GET", "url": "{{baseUrl}}/v1/admins" } },
+        { "name": "Get", "request": { "method": "GET", "url": "{{baseUrl}}/v1/admins/{{adminId}}" } },
+        { "name": "Create (Superadmin)", "request": { "method": "POST", "url": "{{baseUrl}}/v1/admins" } },
+        { "name": "Update (Superadmin)", "request": { "method": "PUT", "url": "{{baseUrl}}/v1/admins/{{adminId}}" } },
+        { "name": "Delete (Superadmin)", "request": { "method": "DELETE", "url": "{{baseUrl}}/v1/admins/{{adminId}}" } }
+      ]
+    }
+  ]
+>>>>>>> f96ee31 (docs(postman): add newpost.json with updated endpoints)
+}

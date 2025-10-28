@@ -183,7 +183,7 @@ This document lists all Socket.IO events in the system, who emits them, required
 
 - Event: `pricing:update`
   - Emitter: Server (pricing service/controller)
-  - Payload: `{ bookingId, vehicleType, distanceKm, fareEstimated, fareBreakdown }`
+  - Payload: `{ bookingId, vehicleType, pickup, dropoff, distanceKm, fareEstimated, fareBreakdown }`
   - Usage:
     - Admin sets base pricing via `POST/PUT /v1/pricing`. No per-booking manual calc.
     - Driver emits booking context; server recalculates as needed and broadcasts.

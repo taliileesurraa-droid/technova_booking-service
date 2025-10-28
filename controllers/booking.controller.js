@@ -1,6 +1,7 @@
 const bookingService = require('../services/bookingService');
 const errorHandler = require('../utils/errorHandler');
 const bookingEvents = require('../events/bookingEvents');
+const logger = require('../utils/logger');
 
 exports.create = async (req, res) => {
   try {
@@ -37,6 +38,39 @@ exports.create = async (req, res) => {
       bookingEvents.emitBookingCreatedToNearestPassengers({ ...data }, targets);
     } catch (_) {}
     return res.status(201).json(data);
+  } catch (e) { errorHandler(res, e); }
+}
+
+// Admin creates a booking on behalf of a passenger
+exports.adminCreate = async (req, res) => {
+  try {
+    const { passengerId, vehicleType, pickup, dropoff } = req.body || {};
+    if (!passengerId) return res.status(400).json({ message: 'passengerId is required' });
+    if (!pickup || !dropoff) return res.status(400).json({ message: 'pickup and dropoff are required' });
+    const booking = await bookingService.createBooking({
+      passengerId: String(passengerId),
+      jwtUser: null,
+      vehicleType,
+      pickup,
+      dropoff,
+      authHeader: req.headers && req.headers.authorization ? { Authorization: req.headers.authorization } : undefined,
+      skipPassengerMeta: true
+    });
+    return res.status(201).json({
+      id: String(booking._id),
+      passengerId: String(booking.passengerId),
+      passenger: (booking.passengerName || booking.passengerPhone) ? { id: String(booking.passengerId), name: booking.passengerName, phone: booking.passengerPhone } : undefined,
+      vehicleType: booking.vehicleType,
+      pickup: booking.pickup,
+      dropoff: booking.dropoff,
+      distanceKm: booking.distanceKm,
+      fareEstimated: booking.fareEstimated,
+      fareFinal: booking.fareFinal,
+      fareBreakdown: booking.fareBreakdown,
+      status: booking.status,
+      createdAt: booking.createdAt,
+      updatedAt: booking.updatedAt
+    });
   } catch (e) { errorHandler(res, e); }
 }
 
@@ -86,10 +120,20 @@ exports.assign = async (req, res) => {
   try {
     const bookingId = req.params.id;
     const { driverId, dispatcherId, passengerId } = req.body;
+    try { logger.info('[route] POST /v1/bookings/:id/assign', { by: req.user && req.user.id, role: req.user && req.user.type, bookingId, driverId, dispatcherId, passengerId }); } catch (_) {}
     if (!driverId) return res.status(400).json({ message: 'Driver ID is required for assignment' });
     if (!dispatcherId) return res.status(400).json({ message: 'Dispatcher ID is required for assignment' });
     const result = await bookingService.assignDriver({ bookingId, driverId, dispatcherId, passengerId });
     bookingEvents.emitBookingAssigned(String(bookingId), String(driverId));
+    try {
+      const b = result && result.booking;
+      logger.info('[assign] success', {
+        bookingId: String(bookingId),
+        driverId: String(driverId),
+        passengerId: b && b.passengerId,
+        vehicleType: b && b.vehicleType
+      });
+    } catch (_) {}
     return res.json(result);
   } catch (e) { errorHandler(res, e); }
 }
@@ -117,7 +161,7 @@ exports.nearby = async (req, res) => {
     if (!isFinite(latitude) || !isFinite(longitude)) {
       return res.status(400).json({ message: 'Valid latitude and longitude are required' });
     }
-    const result = await bookingService.listNearbyBookings({ latitude, longitude, radiusKm, vehicleType, limit, driverId: req.user && req.user.type === 'driver' ? String(req.user.id) : undefined });
+    const result = await bookingService.listNearbyBookings({ latitude, longitude, radiusKm, vehicleType, limit, driverId: req.user && req.user.type === 'driver' ? String(req.user.id) : undefined, headers: req.headers || {} });
     return res.json(result);
   } catch (e) { errorHandler(res, e); }
 }

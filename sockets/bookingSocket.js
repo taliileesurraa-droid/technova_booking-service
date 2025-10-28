@@ -110,6 +110,8 @@ module.exports = (io, socket) => {
             passenger: { id: passengerId, name: socket.user.name, phone: socket.user.phone }
           };
           const payloadForDriver = { id: String(booking._id), bookingId: String(booking._id), booking: bookingDetails, patch, user: { id: passengerId, type: 'passenger' } };
+          // Also prepare a broadcast payload for the shared 'drivers' room as a fallback delivery channel
+          const payloadForDriversRoom = { id: String(booking._id), bookingId: String(booking._id), booking: bookingDetails, patch };
           let sentCount = 0;
           for (const drv of targetDrivers) {
             const driverId = String(drv._id);
@@ -120,6 +122,8 @@ module.exports = (io, socket) => {
               sentCount++;
             }
           }
+          // Fallback broadcast to all connected drivers to reduce missed deliveries
+          try { io.to('drivers').emit('booking:new', payloadForDriversRoom); } catch (_) {}
           try { logger.info('[socket->drivers] booking:new broadcast', { bookingId: String(booking._id), sent: sentCount, considered: targetDrivers.length }); } catch (_) {}
         } else {
           try { logger.info('[socket->drivers] no eligible driver (package/distance)', { bookingId: String(booking._id) }); } catch (_) {}
@@ -188,6 +192,23 @@ module.exports = (io, socket) => {
         // Additionally notify passenger room directly to avoid missing room join timing
         try { if (updated.passengerId) io.to(`passenger:${String(updated.passengerId)}`).emit('booking_accept', acceptPayload); } catch (_) {}
         try { if (updated.passengerId) io.to(`passenger:${String(updated.passengerId)}`).emit('booking:accept', acceptPayload); } catch (_) {}
+
+        // Emit immediate booking:status snapshot to room and passenger room for clients relying on status stream
+        try {
+          const statusSnapshot = {
+            id: String(updated._id),
+            bookingId: String(updated._id),
+            status: 'accepted',
+            driverId: String(socket.user.id),
+            passengerId: String(updated.passengerId || ''),
+            vehicleType: updated.vehicleType,
+            pickup: updated.pickup,
+            dropoff: updated.dropoff,
+            acceptedAt: updated.acceptedAt
+          };
+          io.to(room).emit('booking:status', statusSnapshot);
+          try { if (updated.passengerId) io.to(`passenger:${String(updated.passengerId)}`).emit('booking:status', statusSnapshot); } catch (_) {}
+        } catch (_) {}
       } catch (_) {}
 
       // Inform nearby drivers to remove
@@ -247,6 +268,8 @@ module.exports = (io, socket) => {
       if (!booking) return socket.emit('booking_error', { message: 'Booking not found or not assigned to you', source: 'trip_started' });
       const updated = await lifecycle.startTrip(bookingId, startLocation);
       bookingEvents.emitTripStarted(io, updated);
+      // Also emit an initial trip_ongoing update at the start location for clients expecting continuous stream from start
+      try { if (startLocation) bookingEvents.emitTripOngoing(io, updated, startLocation); } catch (_) {}
       try { logger.info('[socket->room] trip_started', { bookingId: String(updated._id) }); } catch (_) {}
     } catch (err) {
       logger.error('[trip_started] error', err);
@@ -272,6 +295,42 @@ module.exports = (io, socket) => {
       const point = await lifecycle.updateTripLocation(bookingId, String(socket.user.id), location);
       bookingEvents.emitTripOngoing(io, bookingId, point);
       try { logger.info('[socket->room] trip_ongoing', { bookingId, lat: point.lat, lon: point.lng }); } catch (_) {}
+
+      // Live pricing recompute based on current path length from TripHistory
+      try {
+        const TripHistory = require('../models/tripHistoryModel');
+        const { calculateFare } = require('../services/pricingService');
+        const { haversineKm } = require('../utils/distance');
+        const trip = await TripHistory.findOne({ bookingId });
+        let distanceKm = 0;
+        if (trip && Array.isArray(trip.locations) && trip.locations.length >= 2) {
+          for (let i = 1; i < trip.locations.length; i++) {
+            const a = trip.locations[i - 1];
+            const b = trip.locations[i];
+            distanceKm += haversineKm({ latitude: a.lat, longitude: a.lng }, { latitude: b.lat, longitude: b.lng });
+          }
+        } else if (booking.pickup && location) {
+          distanceKm = haversineKm({ latitude: booking.pickup.latitude, longitude: booking.pickup.longitude }, { latitude: location.latitude, longitude: location.longitude });
+        }
+        const elapsedMinutes = 0; // optional: compute from startedAt if needed
+        const estFare = await calculateFare(distanceKm, elapsedMinutes, booking.vehicleType, 1, 0);
+        const payloadUpdate = {
+          bookingId: String(booking._id),
+          vehicleType: booking.vehicleType,
+          pickup: booking.pickup,
+          dropoff: booking.dropoff,
+          distanceKm,
+          fareEstimated: estFare,
+          fareBreakdown: {
+            base: undefined,
+            distanceCost: undefined,
+            timeCost: undefined,
+            waitingCost: undefined,
+            surgeMultiplier: 1
+          }
+        };
+        io.to(`booking:${String(booking._id)}`).emit('pricing:update', payloadUpdate);
+      } catch (e) { try { logger.error('[trip_ongoing] live pricing failed', e); } catch (_) {} }
     } catch (err) {
       logger.error('[trip_ongoing] error', err);
       socket.emit('booking_error', { message: 'Failed to update trip location', source: 'trip_ongoing' });

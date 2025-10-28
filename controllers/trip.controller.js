@@ -23,6 +23,7 @@ exports.list = async (req, res) => {
     if (userType === 'passenger') query.passengerId = String(req.user.id);
     if (status) query.status = status;
 
+    // Fetch trip histories
     const rows = await TripHistory.find(query)
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -39,6 +40,7 @@ exports.list = async (req, res) => {
     const validDriverIds = driverIds.filter(id => Types.ObjectId.isValid(id));
     const validBookingIds = bookingIds.filter(id => Types.ObjectId.isValid(id));
 
+    // Fetch passengers, drivers, and bookings
     const [passengers, drivers, bookings] = await Promise.all([
       validPassengerIds.length ? Passenger.find({ _id: { $in: validPassengerIds } }).select({ _id: 1, name: 1, phone: 1, email: 1 }).lean() : Promise.resolve([]),
       validDriverIds.length ? Driver.find({ _id: { $in: validDriverIds } }).select({ _id: 1, name: 1, phone: 1, email: 1, vehicleType: 1 }).lean() : Promise.resolve([]),
@@ -49,8 +51,34 @@ exports.list = async (req, res) => {
     const didMap = Object.fromEntries(drivers.map(d => [String(d._id), d]));
     const bidMap = Object.fromEntries(bookings.map(b => [String(b._id), b]));
 
+    // Fetch extra driver info for non-ObjectId driverIds
+    let extraDriverInfo = {};
+    try {
+      const nonObjectDriverIds = driverIds.filter(id => !Types.ObjectId.isValid(id));
+      if (nonObjectDriverIds.length) {
+        const { getDriversByIds } = require('../integrations/userServiceClient');
+        const headers = req.headers && req.headers.authorization ? { Authorization: req.headers.authorization } : undefined;
+        const infos = await getDriversByIds(nonObjectDriverIds, { headers });
+        extraDriverInfo = Object.fromEntries((infos || []).map(i => [String(i.id), { id: String(i.id), name: i.name, phone: i.phone, email: i.email }]));
+      }
+    } catch (_) {}
+
+    // Map trips with passenger, driver, and booking info
     const data = rows.map(r => {
       const b = bidMap[String(r.bookingId)];
+
+      let driverDetail = toBasicUser(didMap[String(r.driverId)]) || extraDriverInfo[String(r.driverId)];
+
+      // fallback to logged-in user if driverId matches request user
+      if (!driverDetail && String(req.user?.id) === String(r.driverId)) {
+        driverDetail = {
+          id: String(r.driverId),
+          name: req.user?.name,
+          phone: req.user?.phone,
+          email: req.user?.email
+        };
+      }
+
       return {
         id: String(r._id),
         bookingId: String(r.bookingId),
@@ -61,7 +89,7 @@ exports.list = async (req, res) => {
         createdAt: r.createdAt,
         updatedAt: r.updatedAt,
         passenger: toBasicUser(pidMap[String(r.passengerId)]) || (b ? { id: String(r.passengerId), name: b.passengerName, phone: b.passengerPhone } : undefined),
-        driver: toBasicUser(didMap[String(r.driverId)]),
+        driver: driverDetail,
         booking: b ? {
           id: String(b._id),
           vehicleType: b.vehicleType,
@@ -121,125 +149,6 @@ exports.get = async (req, res) => {
   }
 };
 
-exports.create = async (req, res) => {
-  try {
-    const { 
-      bookingId, 
-      driverId, 
-      passengerId, 
-      status = 'completed', 
-      fare, 
-      distance, 
-      duration, 
-      pickupLocation, 
-      dropoffLocation, 
-      startTime, 
-      endTime, 
-      notes 
-    } = req.body;
-
-    if (!bookingId || !driverId || !passengerId) {
-      return res.status(400).json({ message: 'bookingId, driverId, and passengerId are required' });
-    }
-
-    const trip = new TripHistory({
-      bookingId,
-      driverId,
-      passengerId,
-      status,
-      fare,
-      distance,
-      duration,
-      pickupLocation,
-      dropoffLocation,
-      startTime: startTime ? new Date(startTime) : new Date(),
-      endTime: endTime ? new Date(endTime) : new Date(),
-      dateOfTravel: new Date(),
-      notes
-    });
-
-    await trip.save();
-
-    return res.status(201).json({
-      id: String(trip._id),
-      bookingId: String(trip.bookingId),
-      driverId: String(trip.driverId),
-      passengerId: String(trip.passengerId),
-      status: trip.status,
-      fare: trip.fare,
-      distance: trip.distance,
-      duration: trip.duration,
-      pickupLocation: trip.pickupLocation,
-      dropoffLocation: trip.dropoffLocation,
-      startTime: trip.startTime,
-      endTime: trip.endTime,
-      dateOfTravel: trip.dateOfTravel,
-      notes: trip.notes,
-      createdAt: trip.createdAt,
-      updatedAt: trip.updatedAt
-    });
-  } catch (e) {
-    return res.status(500).json({ message: `Failed to create trip: ${e.message}` });
-  }
-};
-
-exports.update = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { 
-      status, 
-      fare, 
-      distance, 
-      duration, 
-      pickupLocation, 
-      dropoffLocation, 
-      startTime, 
-      endTime, 
-      notes 
-    } = req.body;
-
-    const trip = await TripHistory.findById(id);
-    if (!trip) {
-      return res.status(404).json({ message: 'Trip not found' });
-    }
-
-    // Update fields if provided
-    if (status) trip.status = status;
-    if (fare !== undefined) trip.fare = fare;
-    if (distance !== undefined) trip.distance = distance;
-    if (duration !== undefined) trip.duration = duration;
-    if (pickupLocation) trip.pickupLocation = pickupLocation;
-    if (dropoffLocation) trip.dropoffLocation = dropoffLocation;
-    if (startTime) trip.startTime = new Date(startTime);
-    if (endTime) trip.endTime = new Date(endTime);
-    if (notes !== undefined) trip.notes = notes;
-
-    trip.updatedAt = new Date();
-    await trip.save();
-
-    return res.json({
-      id: String(trip._id),
-      bookingId: String(trip.bookingId),
-      driverId: String(trip.driverId),
-      passengerId: String(trip.passengerId),
-      status: trip.status,
-      fare: trip.fare,
-      distance: trip.distance,
-      duration: trip.duration,
-      pickupLocation: trip.pickupLocation,
-      dropoffLocation: trip.dropoffLocation,
-      startTime: trip.startTime,
-      endTime: trip.endTime,
-      dateOfTravel: trip.dateOfTravel,
-      notes: trip.notes,
-      createdAt: trip.createdAt,
-      updatedAt: trip.updatedAt
-    });
-  } catch (e) {
-    return res.status(500).json({ message: `Failed to update trip: ${e.message}` });
-  }
-};
-
 exports.remove = async (req, res) => {
   try {
     const { id } = req.params;
@@ -256,5 +165,3 @@ exports.remove = async (req, res) => {
     return res.status(500).json({ message: `Failed to delete trip: ${e.message}` });
   }
 };
-
-

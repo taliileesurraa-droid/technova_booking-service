@@ -28,6 +28,7 @@ router.use(
 router.use("/trips", require("./trip.routes"));
 router.use("/live", require("./live.routes"));
 router.use("/pricing", authorize("admin"), require("./pricing.routes"));
+router.use("/driver-pricing", require("./driverPricing.routes"));
 router.use("/admins", authorize("admin"), require("./admin.routes"));
 router.use("/drivers", require("./driver.routes"));
 // Payment options simple router
